@@ -25,6 +25,6 @@ If you bundle a GPL build of FFmpeg, say so here; if you want the LGPL terms, us
 
 SEVBY talks to these services but is not affiliated with, endorsed by, or sponsored by any of them. Their names and trademarks belong to their owners.
 
-- **Spotify** — Web API, used only to read playlist details. Use of the API is governed by the [Spotify Developer Terms](https://developer.spotify.com/terms). Each user supplies their own free Client ID.
-- **Bandcamp** — public track pages.
-- **YouTube / Google** — public videos.
+- **Spotify** - Web API, used only to read playlist details. Use of the API is governed by the [Spotify Developer Terms](https://developer.spotify.com/terms). Each user supplies their own free Client ID.
+- **Bandcamp** - public track pages.
+- **YouTube / Google** - public videos.
