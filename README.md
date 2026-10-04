@@ -1,11 +1,5 @@
 ***Beta: Linux/Mac builds untested.***
 
-Antivirus note: SEVBY is unsigned and built with PyInstaller, so some antivirus programs (e.g. AVG/Avast) may flag or delay it as an unknown file. The full source code is in this repo and the release files are built automatically by the GitHub Actions workflow. You can also run it from source (see Quick start).
-
-<img width="2475" height="1223" alt="image" src="https://github.com/user-attachments/assets/7602f689-6537-4b33-a1dc-c0a382ddda59" />
-https://www.virustotal.com/gui/file/348bacf093abe15f77455337616c0d77955364851724d54a4b4426fb94414a2c/detection
-
-
 # SEVBY: Playlist to MP3
 
 *SEVBY stands for Spotify Export via Bandcamp & YouTube.*
@@ -94,6 +88,12 @@ SEVBY is a small interface that glues together some excellent open-source projec
 - The "Artist - Title" list idea owes a nod to **[Chosic's playlist exporter](https://www.chosic.com/spotify-playlist-exporter/)**, which SEVBY links to as an optional alternative
 
 Full licence details: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+## Antivirus note
+Antivirus note: SEVBY is unsigned and built with PyInstaller, so some antivirus programs (e.g. AVG/Avast) may flag or delay it as an unknown file. The full source code is in this repo and the release files are built automatically by the GitHub Actions workflow. You can also run it from source (see Quick start).
+
+<img width="2475" height="1223" alt="image" src="https://github.com/user-attachments/assets/7602f689-6537-4b33-a1dc-c0a382ddda59" />
+https://www.virustotal.com/gui/file/348bacf093abe15f77455337616c0d77955364851724d54a4b4426fb94414a2c/detection
 
 ## Disclaimer
 
