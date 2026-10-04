@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SEVBY - Spotify Export via Bandcamp & YouTube
+SEVBY: Playlist to MP3  (Spotify Export via Bandcamp & YouTube)
 =============================================
 Standalone desktop app (customtkinter).
 
@@ -104,7 +104,7 @@ class _Stopped(Exception):
     """Raised inside a yt-dlp progress hook to abort the current download."""
 
 
-# ── Config helpers ──────────────────────────────────────────────────────────
+# -- Config helpers ----------------------------------------------------------
 
 def load_config() -> dict:
     if CONFIG_PATH.exists():
@@ -122,7 +122,7 @@ def save_config(data: dict) -> None:
         pass
 
 
-# ── Bandcamp search ─────────────────────────────────────────────────────────
+# -- Bandcamp search ---------------------------------------------------------
 
 def fix_bc_url(url: str) -> str:
     if not url:
@@ -134,7 +134,7 @@ def fix_bc_url(url: str) -> str:
 
 def _split_query(query: str) -> tuple[str, str]:
     """Return (artist, title). Artist is '' if no separator found."""
-    for sep in (" - ", " – ", " — "):
+    for sep in (" - ", " � ", " � "):
         if sep in query:
             a, t = query.split(sep, 1)
             return a.strip(), t.strip()
@@ -145,7 +145,7 @@ def bc_score(result: dict, query: str) -> float:
     q = query.lower().strip()
     name = (result.get("name") or "").lower()
     band = (result.get("band_name") or "").lower()
-    q_clean = q.replace("–", " ").replace("—", " ").replace("-", " ").replace(",", " ")
+    q_clean = q.replace("�", " ").replace("�", " ").replace("-", " ").replace(",", " ")
     tokens = [t for t in q_clean.split() if len(t) > 1]
     score = 0.0
     for tok in tokens:
@@ -349,7 +349,7 @@ def _norm_text(s: str) -> str:
 def _bc_subdomains(artist: str) -> list[str]:
     """Likely Bandcamp subdomains for an artist name."""
     first = re.split(r"\s*(?:,|&|\bfeat\.?|\bft\.?|\bx\b)\s*", artist, flags=re.I)[0]
-    low = re.sub(r"['’`]", "", first.lower()).strip()
+    low = re.sub(r"['�`]", "", first.lower()).strip()
     out: list[str] = []
     for s in (re.sub(r"[^a-z0-9]", "", low), re.sub(r"[^a-z0-9]+", "-", low).strip("-")):
         if s and s not in out:
@@ -360,10 +360,10 @@ def _bc_subdomains(artist: str) -> list[str]:
 def _bc_title_slugs(title: str) -> list[str]:
     """Likely URL slugs for a track title."""
     no_paren = re.sub(r"\s*[\(\[][^)\]]*[\)\]]", "", title).strip()
-    variants = [title, no_paren, re.split(r"\s+[-–—]\s+", no_paren)[0].strip()]
+    variants = [title, no_paren, re.split(r"\s+[-��]\s+", no_paren)[0].strip()]
     out: list[str] = []
     for v in variants:
-        low = re.sub(r"['’`]", "", v.lower())
+        low = re.sub(r"['�`]", "", v.lower())
         slug = re.sub(r"[^a-z0-9]+", "-", low).strip("-")
         if slug and slug not in out:
             out.append(slug)
@@ -467,7 +467,7 @@ def search_bandcamp(query: str, use_api: bool = True) -> dict:
     }
 
 
-# ── Spotify (PKCE login = Client ID only, works for private playlists) ──────
+# -- Spotify (PKCE login = Client ID only, works for private playlists) ------
 
 def _http_json(req: urllib.request.Request, timeout: int = 20) -> dict:
     for attempt in range(6):
@@ -557,7 +557,7 @@ def spotify_login_pkce(client_id: str, log, timeout: int = 180) -> dict | None:
             "state": state,
         }
     )
-    log("Opening your browser to log in to Spotify (one-time)…")
+    log("Opening your browser to log in to Spotify (one-time)�")
     webbrowser.open(f"https://accounts.spotify.com/authorize?{params}")
 
     deadline = time.time() + timeout
@@ -574,7 +574,7 @@ def spotify_login_pkce(client_id: str, log, timeout: int = 180) -> dict | None:
         log(f"Spotify login was cancelled or failed: {got.get('error') or 'no code'}")
         return None
     if got.get("state") != state:
-        log("Spotify login state mismatch — aborted.")
+        log("Spotify login state mismatch � aborted.")
         return None
 
     try:
@@ -627,7 +627,7 @@ def get_spotify_access_token(client_id: str, client_secret: str, log) -> str | N
                     save_config(cfg)
                 return tok["access_token"]
         except Exception:
-            log("Saved Spotify login expired — logging in again.")
+            log("Saved Spotify login expired � logging in again.")
 
     # 2) Browser login (works for private playlists)
     tok = spotify_login_pkce(client_id, log)
@@ -642,7 +642,7 @@ def get_spotify_access_token(client_id: str, client_secret: str, log) -> str | N
 
     # 3) Optional fallback: old client-credentials (public playlists only)
     if client_secret:
-        log("Trying public-playlist access with Client Secret…")
+        log("Trying public-playlist access with Client Secret�")
         return spotify_client_credentials(client_id, client_secret)
     return None
 
@@ -717,7 +717,7 @@ def spotify_playlist_name(playlist_url: str, token: str) -> str:
     return (_http_json(req).get("name") or "").strip()
 
 
-# ── Song list parsing ───────────────────────────────────────────────────────
+# -- Song list parsing -------------------------------------------------------
 
 def parse_song_lines(text: str) -> list[str]:
     songs = []
@@ -725,8 +725,8 @@ def parse_song_lines(text: str) -> list[str]:
         line = line.strip()
         if not line or line.startswith("===") or line.startswith("http"):
             continue
-        if "  →  " in line:
-            line = line.split("  →  ")[0].strip()
+        if "  ?  " in line:
+            line = line.split("  ?  ")[0].strip()
         songs.append(line)
     return songs
 
@@ -736,7 +736,7 @@ def load_songs_from_file(path: str) -> list[str]:
     return parse_song_lines(raw)
 
 
-# ── Downloading (Bandcamp + YouTube, both via yt-dlp) ───────────────────────
+# -- Downloading (Bandcamp + YouTube, both via yt-dlp) -----------------------
 
 def ffmpeg_path() -> str:
     """Bundled ffmpeg first (inside the app / next to it), then whatever is on PATH."""
@@ -838,7 +838,7 @@ def _has_cover(mp3: str) -> bool:
     """True if the MP3 contains embedded art (ffmpeg lists it as a Video stream)."""
     r = _run_ff(["-i", mp3])
     if r is None:
-        return True  # can't check → don't touch the file
+        return True  # can't check ? don't touch the file
     return "Video:" in (r.stderr or b"").decode("utf-8", errors="replace")
 
 
@@ -928,7 +928,7 @@ def _ensure_cover(out_dir: str, safe: str, info: dict | None, log) -> None:
             img = _find_or_fetch_cover(out_dir, safe, info)
             if img and _embed_cover(mp3, img):
                 if log:
-                    log("  Cover art was missing — added it.")
+                    log("  Cover art was missing � added it.")
             elif log:
                 log("  Note: no cover art could be found for this track.")
     finally:
@@ -1017,7 +1017,7 @@ def _run_ytdlp_cli(
     except subprocess.TimeoutExpired:
         return False, "timed out"
     except FileNotFoundError:
-        return False, "yt-dlp not found — run: pip install -U yt-dlp"
+        return False, "yt-dlp not found � run: pip install -U yt-dlp"
     except Exception as e:
         return False, str(e)
 
@@ -1051,7 +1051,7 @@ def _already_exists(out_dir: str, safe: str) -> bool:
     )
 
 
-# ── Tags & cover art ────────────────────────────────────────────────────────
+# -- Tags & cover art --------------------------------------------------------
 
 def meta_for(song: str) -> dict:
     """Tag info for a song: full Spotify details if we have them, else parsed from 'Artist - Title'."""
@@ -1160,7 +1160,7 @@ def _finalize_youtube(out_dir: str, safe: str, info: dict | None, meta: dict, lo
         _remove_loose_images(out_dir, safe)
 
 
-# ── YouTube matching ────────────────────────────────────────────────────────
+# -- YouTube matching --------------------------------------------------------
 
 _UNWANTED = (
     "live", "remix", "cover", "karaoke", "instrumental", "sped up", "slowed", "reverb",
@@ -1265,7 +1265,7 @@ def download_bandcamp_mp3(bc_url: str, query: str, out_dir: str, log) -> bool:
         meta = SONG_META.get(query)
         if meta and meta.get("album"):  # Spotify knows this track: make the tags consistent
             _apply_tags(os.path.join(out_dir, f"{safe}.mp3"), meta, None, wipe=False)
-        log(f"  OK (Bandcamp) → {safe}.mp3")
+        log(f"  OK (Bandcamp) ? {safe}.mp3")
     elif err == "stopped":
         log("  Stopped.")
     else:
@@ -1290,7 +1290,7 @@ def download_youtube_mp3(query: str, out_dir: str, log, use_cookies: bool = True
         if not targets:
             log(
                 f"  Match: {entry.get('title')} [{_fmt_len(entry.get('duration'))}]"
-                + (f" — {entry.get('channel') or entry.get('uploader')}" if (entry.get('channel') or entry.get('uploader')) else "")
+                + (f" � {entry.get('channel') or entry.get('uploader')}" if (entry.get('channel') or entry.get('uploader')) else "")
                 + ("" if score >= 20 else "  (best guess)")
             )
         targets.append(url)
@@ -1303,17 +1303,17 @@ def download_youtube_mp3(query: str, out_dir: str, log, use_cookies: bool = True
             break
     if ok:
         _finalize_youtube(out_dir, safe, _LAST_INFO.get("info"), meta, log)
-        log(f"  OK → {safe}.mp3")
+        log(f"  OK ? {safe}.mp3")
     elif err == "stopped":
         log("  Stopped.")
     else:
         log(f"  FAIL: {err}")
         if "403" in err or "forbidden" in err.lower():
-            log("  Tip: YouTube changes often — update yt-dlp (pip install -U yt-dlp) and rebuild SEVBY.")
+            log("  Tip: YouTube changes often � update yt-dlp (pip install -U yt-dlp) and rebuild SEVBY.")
     return ok
 
 
-# ── GUI base (with optional drag-and-drop) ──────────────────────────────────
+# -- GUI base (with optional drag-and-drop) ----------------------------------
 
 if _HAS_DND:
 
@@ -1331,7 +1331,7 @@ else:
 class SevbyApp(_SevbyBase):
     def __init__(self):
         super().__init__()
-        self.title("SEVBY — Playlist Downloader")
+        self.title("SEVBY: Playlist to MP3")
         self._apply_icon(self)
         self.minsize(580, 720)
         self._center_window(680, 800)
@@ -1352,7 +1352,7 @@ class SevbyApp(_SevbyBase):
         )
         ctk.CTkLabel(
             self,
-            text="Bandcamp first · YouTube for the rest",
+            text="Bandcamp first � YouTube for the rest",
             font=ctk.CTkFont(size=12),
             text_color="gray70",
         ).pack(pady=(0, 12))
@@ -1404,7 +1404,7 @@ class SevbyApp(_SevbyBase):
 
         ctk.CTkLabel(
             self.sp_frame,
-            text="Public & private playlists · one-time login saved on this PC",
+            text="Public & private playlists � one-time login saved on this PC",
             text_color="gray70",
             font=ctk.CTkFont(size=11),
         ).pack(anchor="w", padx=12, pady=(10, 2))
@@ -1442,7 +1442,7 @@ class SevbyApp(_SevbyBase):
         self.client_id = ctk.CTkEntry(self.sp_frame, placeholder_text="Client ID")
         self.client_id.pack(fill="x", padx=12, pady=2)
         self.client_secret = ctk.CTkEntry(
-            self.sp_frame, placeholder_text="Client Secret (optional, not needed)", show="•"
+            self.sp_frame, placeholder_text="Client Secret (optional, not needed)", show="�"
         )
         self.client_secret.pack(fill="x", padx=12, pady=2)
 
@@ -1647,7 +1647,7 @@ class SevbyApp(_SevbyBase):
             "Opened Chosic in your browser.\n"
             "1) Paste your Spotify playlist link there\n"
             "2) Download / copy the song list as text\n"
-            "3) Switch to “Song list / .txt file” in SEVBY and paste or load it"
+            "3) Switch to �Song list / .txt file� in SEVBY and paste or load it"
         )
 
     def _apply_icon(self, win):
@@ -1716,22 +1716,22 @@ class SevbyApp(_SevbyBase):
             "playlists (public AND private). It is NOT your password.\n"
             "You do NOT need Spotify Premium.\n\n"
             "How to get it (about 2 minutes, one time only):\n\n"
-            "1. Click “Open Spotify Dashboard” in SEVBY\n"
+            "1. Click �Open Spotify Dashboard� in SEVBY\n"
             "   (or go to developer.spotify.com/dashboard)\n"
             "2. Log in with your normal Spotify account\n"
-            "3. Click “Create app”\n"
-            "   • App name: anything (e.g. SEVBY)\n"
-            "   • Redirect URI: type exactly  http://127.0.0.1:8888\n"
-            "   • Tick Web API → agree to the terms → Save\n"
-            "4. Open the app → Settings → copy the Client ID\n"
-            "5. Come back and press Start — SEVBY pastes it from your\n"
+            "3. Click �Create app�\n"
+            "   � App name: anything (e.g. SEVBY)\n"
+            "   � Redirect URI: type exactly  http://127.0.0.1:8888\n"
+            "   � Tick Web API ? agree to the terms ? Save\n"
+            "4. Open the app ? Settings ? copy the Client ID\n"
+            "5. Come back and press Start � SEVBY pastes it from your\n"
             "   clipboard (or paste it into the Client ID box yourself).\n"
             "   No Secret needed.\n\n"
             "The first time you press Start, your browser opens so you\n"
-            "can click “Agree”. After that SEVBY remembers you.\n"
+            "can click �Agree�. After that SEVBY remembers you.\n"
             "Saved only on this PC.\n\n"
-            "Prefer not to? Click “Open Chosic”, export a .txt,\n"
-            "and use Song list mode — no keys needed."
+            "Prefer not to? Click �Open Chosic�, export a .txt,\n"
+            "and use Song list mode � no keys needed."
         )
         ctk.CTkLabel(
             frame,
@@ -1886,15 +1886,15 @@ class SevbyApp(_SevbyBase):
         self.stop_btn.configure(state="normal")
         self.add_btn.configure(state="disabled")
         self.clear_btn.configure(state="disabled")
-        self.set_progress(0, "Starting…")
+        self.set_progress(0, "Starting�")
         threading.Thread(target=self._worker, args=(jobs,), daemon=True).start()
 
-    # ── Queue ───────────────────────────────────────────────────────────────
+    # -- Queue ---------------------------------------------------------------
     def add_to_queue(self):
         """Snapshot what is on screen as one queue item, then clear the inputs for the next one."""
         out_dir = self.folder_entry.get().strip()
         if not out_dir or not os.path.isdir(out_dir):
-            messagebox.showerror("Error", "Choose a save folder first — each queue item is saved "
+            messagebox.showerror("Error", "Choose a save folder first � each queue item is saved "
                                           "in its own folder inside it.")
             return
         mode = self.mode.get()
@@ -1924,7 +1924,7 @@ class SevbyApp(_SevbyBase):
                 return
             job.update(
                 url=url, cid=cid, secret=self.client_secret.get().strip(),
-                name=f"Spotify playlist …{m.group(1)[:6]}", subfolder=True,
+                name=f"Spotify playlist �{m.group(1)[:6]}", subfolder=True,
             )
             self.sp_url.delete(0, "end")
         self.queue.append(job)
@@ -1943,9 +1943,9 @@ class SevbyApp(_SevbyBase):
         n = len(self.queue)
         running = self.run_mode is not None
         if n:
-            lines = [f"{i}. {j['name']}  →  {j['out_dir']}" for i, j in enumerate(self.queue[:6], 1)]
+            lines = [f"{i}. {j['name']}  ?  {j['out_dir']}" for i, j in enumerate(self.queue[:6], 1)]
             if n > 6:
-                lines.append(f"…and {n - 6} more")
+                lines.append(f"�and {n - 6} more")
             self.queue_label.configure(text="Queue (runs one after another):\n" + "\n".join(lines))
             if not self.queue_label.winfo_ismapped():
                 self.queue_label.pack(fill="x", padx=28, pady=(0, 6), before=self.log_holder)
@@ -2010,9 +2010,9 @@ class SevbyApp(_SevbyBase):
         """No Client ID yet: send the user to Spotify and explain the next step."""
         self.log(
             "Spotify needs a free Client ID (one-time setup).\n"
-            "Opening the Spotify Developer dashboard…\n"
-            "Log in → Create app → Redirect URI  http://127.0.0.1:8888  → Settings → copy the Client ID.\n"
-            "Then come back and press Start — SEVBY will paste it from your clipboard."
+            "Opening the Spotify Developer dashboard�\n"
+            "Log in ? Create app ? Redirect URI  http://127.0.0.1:8888  ? Settings ? copy the Client ID.\n"
+            "Then come back and press Start � SEVBY will paste it from your clipboard."
         )
         self.open_spotify_dashboard()
         self.client_id.focus_set()
@@ -2024,7 +2024,7 @@ class SevbyApp(_SevbyBase):
         PAUSE_EVENT.clear()
         self.stop_btn.configure(state="disabled")
         self.pause_btn.configure(state="disabled")
-        self.log("Stopping… (cancelling the current download)")
+        self.log("Stopping� (cancelling the current download)")
 
     def toggle_pause(self):
         """Pause before the next song / resume."""
@@ -2037,7 +2037,7 @@ class SevbyApp(_SevbyBase):
             PAUSE_EVENT.set()
             self.pause_btn.configure(text="Resume")
             self.set_progress(self.progress.get(), "Paused")
-            self.log("Pausing after the current song finishes…")
+            self.log("Pausing after the current song finishes�")
 
     def _checkpoint(self) -> bool:
         """Hold while paused; return True if the user pressed Stop."""
@@ -2070,7 +2070,7 @@ class SevbyApp(_SevbyBase):
                 if not cid:
                     self.log(
                         "Client ID required for Spotify links.\n"
-                        "Click “What is this?” for the 2-minute one-time setup.\n"
+                        "Click �What is this?� for the 2-minute one-time setup.\n"
                         "Or switch to Song list / .txt mode (no keys needed)."
                     )
                     return
@@ -2080,7 +2080,7 @@ class SevbyApp(_SevbyBase):
                     cfg["client_secret"] = secret
                 save_config(cfg)
 
-                self.log("Connecting to Spotify…")
+                self.log("Connecting to Spotify�")
                 token = get_spotify_access_token(cid, secret, self.log)
                 if not token:
                     self.log(
@@ -2096,7 +2096,7 @@ class SevbyApp(_SevbyBase):
                     except Exception:
                         nm = ""
                     job["subfolder"] = sanitize_filename(nm).strip(". ") or "Spotify playlist"
-                self.log("Fetching Spotify playlist…")
+                self.log("Fetching Spotify playlist�")
                 try:
                     songs = fetch_spotify_tracks(url, token)
                 except Exception as e:
@@ -2116,12 +2116,12 @@ class SevbyApp(_SevbyBase):
 
             can_download = have_ytdlp()
             if not can_download:
-                self.log("yt-dlp not installed — will only collect Bandcamp links (pip install yt-dlp).")
+                self.log("yt-dlp not installed � will only collect Bandcamp links (pip install yt-dlp).")
             else:
                 age = ytdlp_age_days()
                 if age is not None and age > 90:
                     self.log(
-                        f"Heads-up: this copy of yt-dlp is {age} days old. YouTube and Bandcamp change often — "
+                        f"Heads-up: this copy of yt-dlp is {age} days old. YouTube and Bandcamp change often � "
                         "if downloads fail (e.g. HTTP 403), update it with  pip install -U yt-dlp  "
                         "and rebuild SEVBY."
                     )
@@ -2141,9 +2141,9 @@ class SevbyApp(_SevbyBase):
             n = len(songs)
 
             if use_bc:
-                # ── Pass 1: Bandcamp search ──
-                self.log("─" * 40)
-                self.log("Searching Bandcamp…")
+                # -- Pass 1: Bandcamp search --
+                self.log("-" * 40)
+                self.log("Searching Bandcamp�")
                 bc_hits: list[tuple[str, str]] = []  # (song, url)
                 consecutive_errors = 0
                 bandcamp_down = False
@@ -2158,7 +2158,7 @@ class SevbyApp(_SevbyBase):
                         consecutive_errors = 0
                         bc_hits.append((song, result["url"]))
                         self.log(
-                            f"  → Bandcamp: {result['url']}"
+                            f"  ? Bandcamp: {result['url']}"
                             + (" (found by trying the artist's page)" if result.get("guessed") else "")
                         )
                     else:
@@ -2166,7 +2166,7 @@ class SevbyApp(_SevbyBase):
                         err = result.get("error")
                         if err:
                             consecutive_errors += 1
-                            self.log(f"  → Bandcamp search failed: {err}")
+                            self.log(f"  ? Bandcamp search failed: {err}")
                             if consecutive_errors >= 3:
                                 bandcamp_down = True
                                 self.log(
@@ -2178,7 +2178,7 @@ class SevbyApp(_SevbyBase):
                                 )
                         else:
                             consecutive_errors = 0
-                            self.log("  → not on Bandcamp")
+                            self.log("  ? not on Bandcamp")
                     time.sleep(0.25)
 
                 self.log(f"Bandcamp: {len(bc_hits)} found, {len(not_found)} missing")
@@ -2187,10 +2187,10 @@ class SevbyApp(_SevbyBase):
                     self._finish_stopped()
                     return
 
-                # ── Pass 2: download the Bandcamp tracks ──
+                # -- Pass 2: download the Bandcamp tracks --
                 if bc_hits and can_download:
-                    self.log("─" * 40)
-                    self.log(f"Downloading {len(bc_hits)} songs from Bandcamp…")
+                    self.log("-" * 40)
+                    self.log(f"Downloading {len(bc_hits)} songs from Bandcamp�")
                     b = len(bc_hits)
                     for i, (song, bc_url) in enumerate(bc_hits, 1):
                         if self._checkpoint():
@@ -2202,7 +2202,7 @@ class SevbyApp(_SevbyBase):
                         if download_bandcamp_mp3(bc_url, song, out_dir, self.log):
                             bc_ok += 1
                         elif not STOP_EVENT.is_set():
-                            self.log("  → will try YouTube instead" if use_yt else "  → failed")
+                            self.log("  ? will try YouTube instead" if use_yt else "  ? failed")
                             not_found.append(song)
                 elif bc_hits:
                     not_found.extend(s for s, _ in bc_hits)
@@ -2213,7 +2213,7 @@ class SevbyApp(_SevbyBase):
             else:
                 not_found = list(songs)
 
-            # ── Pass 3: YouTube for the rest ──
+            # -- Pass 3: YouTube for the rest --
             yt_ok = 0
             failed: list[str] = []
             if use_yt and not_found:
@@ -2221,8 +2221,8 @@ class SevbyApp(_SevbyBase):
                     self.log("yt-dlp isn't installed, so songs not on Bandcamp can't be downloaded.")
                     failed = list(not_found)
                 else:
-                    self.log("─" * 40)
-                    self.log(f"Downloading {len(not_found)} songs from YouTube…")
+                    self.log("-" * 40)
+                    self.log(f"Downloading {len(not_found)} songs from YouTube�")
                     m = len(not_found)
                     for i, song in enumerate(not_found, 1):
                         if self._checkpoint():
@@ -2237,7 +2237,7 @@ class SevbyApp(_SevbyBase):
                             failed.append(song)
 
                     if STOP_EVENT.is_set():
-                        self.log(f"So far — Bandcamp: {bc_ok} ok · YouTube: {yt_ok} ok, {len(failed)} failed.")
+                        self.log(f"So far � Bandcamp: {bc_ok} ok � YouTube: {yt_ok} ok, {len(failed)} failed.")
                         self._finish_stopped()
                         if not job.get("quiet"):
                             self.after(0, lambda f=list(failed): self._set_failed(f))
@@ -2246,24 +2246,24 @@ class SevbyApp(_SevbyBase):
                 failed = list(not_found)  # Bandcamp-only: whatever it couldn't get
 
             self.set_progress(1.0, "Done")
-            self.log("─" * 40)
+            self.log("-" * 40)
             parts = []
             if use_bc:
                 parts.append(f"Bandcamp: {bc_ok} ok")
             if use_yt:
                 parts.append(f"YouTube: {yt_ok} ok")
             parts.append(f"{len(failed)} failed")
-            summary = " · ".join(parts)
+            summary = " � ".join(parts)
             self.log(f"Done. {summary}.")
             self.log(f"Folder: {out_dir}")
             if failed:
-                self.log("Songs that could not be downloaded (press “Retry failed” to try them again):")
+                self.log("Songs that could not be downloaded (press �Retry failed� to try them again):")
                 for song in failed:
-                    self.log(f"  ✗ {song}")
+                    self.log(f"  ? {song}")
             job["_summary"] = summary
             if not job.get("quiet"):
                 self.after(0, lambda f=list(failed): self._set_failed(f))
-                self.after(0, lambda: self._done_dialog("Finished.\n" + summary.replace(" · ", "\n")))
+                self.after(0, lambda: self._done_dialog("Finished.\n" + summary.replace(" � ", "\n")))
         except Exception as e:
             self.log(f"Unexpected error: {e}")
 
@@ -2276,19 +2276,19 @@ class SevbyApp(_SevbyBase):
                 if STOP_EVENT.is_set():
                     break
                 if total > 1:
-                    self.log("═" * 40)
+                    self.log("-" * 40)
                     self.log(f"Queue {k}/{total}: {job['name']}")
                     job["quiet"] = True
                 self._run_job(job)
                 if total > 1 and not STOP_EVENT.is_set():
                     if "_summary" in job:
                         lines.append(f"{job['name']}: {job['_summary']}")
-                        self.after(0, lambda j=job: self._queue_remove(j))  # done → leaves the queue
+                        self.after(0, lambda j=job: self._queue_remove(j))  # done ? leaves the queue
                     else:
                         lines.append(f"{job['name']}: did not run (kept in the queue)")
             if total > 1 and not STOP_EVENT.is_set():
                 self.set_progress(1.0, "Done")
-                self.log("═" * 40)
+                self.log("-" * 40)
                 self.log(f"Queue finished ({total} items).")
                 self.after(0, lambda: self._done_dialog("Queue finished.\n\n" + "\n".join(lines)))
         except Exception as e:
@@ -2299,7 +2299,7 @@ class SevbyApp(_SevbyBase):
 
     def _finish_stopped(self):
         self.set_progress(self.progress.get(), "Stopped")
-        self.log("─" * 40)
+        self.log("-" * 40)
         self.log("Stopped. Songs already downloaded are kept; run again to continue "
                  "(finished songs are skipped).")
 
