@@ -1,5 +1,7 @@
 ***Beta: Linux/Mac builds untested.***
 
+Antivirus note: SEVBY is unsigned and built with PyInstaller, so some antivirus programs (e.g. AVG/Avast) may flag or delay it as an unknown file. The full source code is in this repo and the release files are built automatically by the GitHub Actions workflow. You can also run it from source (see Quick start).
+
 # SEVBY: Playlist to MP3
 
 *SEVBY stands for Spotify Export via Bandcamp & YouTube.*
