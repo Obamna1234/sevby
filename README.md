@@ -2,6 +2,14 @@
 
 # SEVBY: Playlist to MP3
 
+<img width="677" height="827" alt="image" src="https://github.com/user-attachments/assets/67837605-dd38-4f90-9a44-0b76e37801aa" />
+*SEVBY running a .txt file*
+
+<img width="677" height="828" alt="image" src="https://github.com/user-attachments/assets/88569e0c-0281-4825-beb7-12afde1dda84" />
+*SEVBY running a Spotify playlist*
+
+
+
 *SEVBY stands for Spotify Export via Bandcamp & YouTube.*
 
 Turn a Spotify playlist (or a plain text list of songs) into tagged MP3s on your own computer.
