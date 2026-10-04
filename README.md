@@ -7,6 +7,7 @@
 *SEVBY running a .txt file*
 
 
+
 <img width="677" height="828" alt="image" src="https://github.com/user-attachments/assets/88569e0c-0281-4825-beb7-12afde1dda84" />
 
 *SEVBY running a Spotify playlist*
