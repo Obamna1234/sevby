@@ -13,9 +13,6 @@
 *SEVBY running a Spotify playlist*
 
 
-
-*SEVBY stands for Spotify Export via Bandcamp & YouTube.*
-
 Turn a Spotify playlist (or a plain text list of songs) into tagged MP3s on your own computer.
 SEVBY looks for each song on **Bandcamp** first, and falls back to **YouTube** for anything it can't find.
 
