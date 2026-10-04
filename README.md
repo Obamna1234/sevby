@@ -88,7 +88,7 @@ The `dist/` folder then contains `SEVBY` (or `SEVBY.exe`). The GitHub Actions wo
 SEVBY is a small interface that glues together some excellent open-source projects. The heavy lifting is theirs:
 
 - **[yt-dlp](https://github.com/yt-dlp/yt-dlp)** - finds and downloads the audio from Bandcamp and YouTube (Unlicense)
-- **[FFmpeg](https://ffmpeg.org)** - converts audio to MP3 and writes tags and cover art (LGPL/GPL, bundled as a separate program)
+- **[FFmpeg](https://ffmpeg.org)** - converts audio to MP3 and writes tags and cover art (GPL v3 in the Windows build, bundled as a separate program)
 - **[customtkinter](https://github.com/TomSchimansky/CustomTkinter)** by Tom Schimansky - the user interface (MIT)
 - **[tkinterdnd2](https://github.com/Eliav2/tkinterdnd2)** - drag and drop (MIT)
 - **[PyInstaller](https://pyinstaller.org)** - packages the app (GPL-2.0 with bootloader exception)
