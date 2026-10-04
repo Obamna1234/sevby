@@ -1,6 +1,8 @@
-***Beta – Linux/Mac builds untested***.
+***Beta: Linux/Mac builds untested.***
 
-# SEVBY Spotify Export via Bandcamp & YouTube
+# SEVBY: Playlist to MP3
+
+*SEVBY stands for Spotify Export via Bandcamp & YouTube.*
 
 Turn a Spotify playlist (or a plain text list of songs) into tagged MP3s on your own computer.
 SEVBY looks for each song on **Bandcamp** first, and falls back to **YouTube** for anything it can't find.
@@ -30,7 +32,7 @@ From source you also need **ffmpeg** (put `ffmpeg.exe` / `ffmpeg` next to `sevby
 Spotify requires every app to have a free Client ID. You only do this once:
 
 1. Go to <https://developer.spotify.com/dashboard> and log in.
-2. **Create app** â€” any name. Under **Redirect URIs** add exactly `http://127.0.0.1:8888` and save.
+2. **Create app** - any name. Under **Redirect URIs** add exactly `http://127.0.0.1:8888` and save.
 3. Open the app's **Settings** and copy the **Client ID**.
 4. In SEVBY choose *Spotify playlist link*, paste the playlist link and the Client ID, pick a save folder and press **Start**.
 
@@ -68,21 +70,21 @@ The `dist/` folder then contains `SEVBY` (or `SEVBY.exe`). The GitHub Actions wo
 
 ## Troubleshooting
 
-- **"Bandcamp blocked / Client Challenge"** â€” Bandcamp sometimes shows a bot check. SEVBY then tries each artist's own Bandcamp page and uses YouTube for the rest.
-- **YouTube 403 errors** â€” update yt-dlp (see above).
-- **A copy of each run's log** is saved to `~/.sevby_log.txt` â€” attach it to bug reports.
+- **"Bandcamp blocked / Client Challenge"** - Bandcamp sometimes shows a bot check. SEVBY then tries each artist's own Bandcamp page and uses YouTube for the rest.
+- **YouTube 403 errors** - update yt-dlp (see above).
+- **A copy of each run's log** is saved to `~/.sevby_log.txt` - attach it to bug reports.
 
-## Credits â€” what SEVBY is built on
+## Credits - what SEVBY is built on
 
 SEVBY is a small interface that glues together some excellent open-source projects. The heavy lifting is theirs:
 
-- **[yt-dlp](https://github.com/yt-dlp/yt-dlp)** â€” finds and downloads the audio from Bandcamp and YouTube (Unlicense)
-- **[FFmpeg](https://ffmpeg.org)** â€” converts audio to MP3 and writes tags and cover art (LGPL/GPL, bundled as a separate program)
-- **[customtkinter](https://github.com/TomSchimansky/CustomTkinter)** by Tom Schimansky â€” the user interface (MIT)
-- **[tkinterdnd2](https://github.com/Eliav2/tkinterdnd2)** â€” drag and drop (MIT)
-- **[PyInstaller](https://pyinstaller.org)** â€” packages the app (GPL-2.0 with bootloader exception)
-- **[Spotify Web API](https://developer.spotify.com/documentation/web-api)** â€” only used to read playlist track names and details (no audio comes from Spotify)
-- **[Bandcamp](https://bandcamp.com)** â€” please support artists by buying their music there when you can
+- **[yt-dlp](https://github.com/yt-dlp/yt-dlp)** - finds and downloads the audio from Bandcamp and YouTube (Unlicense)
+- **[FFmpeg](https://ffmpeg.org)** - converts audio to MP3 and writes tags and cover art (LGPL/GPL, bundled as a separate program)
+- **[customtkinter](https://github.com/TomSchimansky/CustomTkinter)** by Tom Schimansky - the user interface (MIT)
+- **[tkinterdnd2](https://github.com/Eliav2/tkinterdnd2)** - drag and drop (MIT)
+- **[PyInstaller](https://pyinstaller.org)** - packages the app (GPL-2.0 with bootloader exception)
+- **[Spotify Web API](https://developer.spotify.com/documentation/web-api)** - only used to read playlist track names and details (no audio comes from Spotify)
+- **[Bandcamp](https://bandcamp.com)** - please support artists by buying their music there when you can
 - The "Artist - Title" list idea owes a nod to **[Chosic's playlist exporter](https://www.chosic.com/spotify-playlist-exporter/)**, which SEVBY links to as an optional alternative
 
 Full licence details: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
