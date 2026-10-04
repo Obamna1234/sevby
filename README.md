@@ -1,6 +1,6 @@
 ***Beta – Linux/Mac builds untested***.
 
-# SEVBY â€” Spotify Export via Bandcamp & YouTube
+# SEVBY Spotify Export via Bandcamp & YouTube
 
 Turn a Spotify playlist (or a plain text list of songs) into tagged MP3s on your own computer.
 SEVBY looks for each song on **Bandcamp** first, and falls back to **YouTube** for anything it can't find.
