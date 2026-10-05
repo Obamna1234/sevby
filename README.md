@@ -1,4 +1,4 @@
-***Beta: Linux/Mac builds untested. The Android app is new (beta).***
+***Beta: Linux/Mac builds untested. The Android version is command-line only and lightly tested.***
 
 # SEVBY: Playlist to MP3
 
@@ -16,24 +16,13 @@ SEVBY looks for each song on **Bandcamp** first, and falls back to **YouTube** f
 
 > **Looking for better quality?** There is also **SEVBY HQ**, an audiophile edition that keeps YouTube's original audio (M4A), checks Jamendo and the Internet Archive for free lossless files first, and labels the quality of every song: <https://github.com/Obamna1234/sevby-hq>. SEVBY (this one) is the simple, everything-as-MP3 version.
 
-## Ways to run SEVBY
-
-| Where | How |
-|---|---|
-| **Windows** | Download the `.exe` from the **Releases** page and double-click it |
-| **Android** | Download the APK from the **SEVBY for Android** release on the Releases page (marked *Pre-release*; see [Android](#android) below) |
-| **Linux / macOS** | Download the build from the Releases page (beta, untested), or run from source |
-| **Any computer** | Run from source with Python (see [Quick start](#quick-start)) |
-
-## What it does
-
 - Paste a Spotify playlist link (public or private; needs a Spotify Client ID, see below), **or** a list / `.txt` file of `Artist - Title` lines (CSV and M3U files work too), **or** a shared **Apple Music playlist link** with the *Apple Music link* button (no sign-in; public playlists only, and it reads Apple's public web page, so it may stop working if Apple changes it)
 - Bandcamp first, YouTube for the rest (or choose *Bandcamp only* / *YouTube only*)
 - MP3 files with title, artist, album, year, track number and square cover art
 - YouTube matching picks the version with the right length and avoids live / remix / sped-up uploads
 - Smarter matching: prefers the artist's own release over compilations, live albums and "Expanded Edition" reissues, and fills in album info from iTunes when Bandcamp has none
-- Pause, Stop and **Resume** (a stopped run carries on where it left off, finished songs show as done), *Retry failed (N)* (re-runs only the failed songs, into the right folders), *Open folder*, and a sound when a run finishes
-- **Queue**: add several playlists / song lists, press *Start Download*, and walk away. They run strictly one after another, each in its own folder named after the playlist. The queue is remembered if you close the app
+- Pause, Stop, *Retry failed (N)* (re-runs only the failed songs, into the right folders), *Open folder*, and a sound when a run finishes
+- **Queue**: add several playlists / song lists, press *Start queue*, and walk away. They run strictly one after another, each in its own folder named after the playlist. The queue is remembered if you close the app
 - A tidy, collapsible **song log**: one entry per song with where it came from, plus a *Details* view and *Copy log* for bug reports
 - Songs already in the folder are skipped (even after an interrupted run); a song listed twice is only downloaded once
 - Retries automatically when the internet drops for a moment
@@ -52,24 +41,7 @@ python sevby_app.py
 
 From source you also need **ffmpeg** (put `ffmpeg.exe` / `ffmpeg` next to `sevby_app.py`, or install it so it's on your PATH).
 
-**Android:** there is a proper app now, see [Android](#android) below.
-
-## Android
-
-**SEVBY for Android** is a proper app (no Termux needed). Get the APK from the **Releases** page: look for the newest
-release named *SEVBY for Android* (tag `android-v…`) and download `SEVBY-…-arm64-v8a.apk` (or `…-universal.apk` if
-unsure). Open it on your phone and allow installing apps from your browser or Files app when asked. Android 7.0+.
-
-- Paste or load a `.txt` song list (`Artist - Title` lines), pick a folder, press **Start Download**
-- Bandcamp first, YouTube for the rest, with album details from Bandcamp or Apple's iTunes Search
-- Queue, Pause / Resume / Stop (also from the notification), *Retry failed*, skips songs already in the folder
-- Keeps running in the background; update the downloader from **About & updates** when YouTube changes
-- **Apple Music:** tap *Apple Music* and paste a public playlist or album link; SEVBY reads the song list itself (no sign-in)
-- Spotify playlists: no Spotify login on Android yet. Tap **Open Chosic** under the song box, paste the playlist link into [Chosic](https://www.chosic.com/spotify-playlist-exporter/), then paste or load the song list in SEVBY
-
-The APK bundles youtubedl-android (GPL v3), so the APK as a whole is distributed under the GPL v3; see
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Developer notes: [android/README.md](android/README.md).
-There is also the older command-line version for Termux: [TERMUX.md](TERMUX.md).
+**Android:** there is a command-line version for Termux (no window). See [TERMUX.md](TERMUX.md). It is a beta.
 
 ## Using a Spotify playlist (one-time setup)
 
@@ -90,7 +62,7 @@ The first time, your browser opens so you can log in to Spotify and approve acce
 
 1. Choose your save folder and source.
 2. Paste a Spotify link (or a song list / load a `.txt`) and press **Add to queue**. The inputs clear so you can add the next one.
-3. Repeat, then press **Start Download (N lists)**.
+3. Repeat, then press **Start queue (N)**.
 
 Items run one at a time, never in parallel. Each is saved in its own sub-folder (the Spotify playlist's name, or the `.txt` file's name). Items that finish leave the queue; if you press Stop, the rest stay queued. Songs already downloaded are skipped, so running again is always safe.
 
@@ -130,7 +102,6 @@ SEVBY is a small interface that glues together some excellent open-source projec
 - **[customtkinter](https://github.com/TomSchimansky/CustomTkinter)** by Tom Schimansky - the user interface (MIT)
 - **[tkinterdnd2](https://github.com/Eliav2/tkinterdnd2)** - drag and drop (MIT)
 - **[PyInstaller](https://pyinstaller.org)** - packages the app (GPL-2.0 with bootloader exception)
-- **[youtubedl-android](https://github.com/JunkFood02/youtubedl-android)** - runs yt-dlp, Python and FFmpeg inside the Android app (GPL v3)
 - **[Spotify Web API](https://developer.spotify.com/documentation/web-api)** - only used to read playlist track names and details (no audio comes from Spotify)
 - **[iTunes Search API](https://performance-partners.apple.com/search-api)** - only used to look up album name, year, track number and cover (no audio comes from Apple)
 - **[Bandcamp](https://bandcamp.com)** - please support artists by buying their music there when you can
