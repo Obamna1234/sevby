@@ -1,4 +1,4 @@
-***Beta: Linux/Mac builds untested.***
+***Beta: Linux/Mac builds untested. The Android version is command-line only and lightly tested.***
 
 # SEVBY: Playlist to MP3
 
@@ -35,6 +35,8 @@ python sevby_app.py
 ```
 
 From source you also need **ffmpeg** (put `ffmpeg.exe` / `ffmpeg` next to `sevby_app.py`, or install it so it's on your PATH).
+
+**Android:** there is a command-line version for Termux (no window). See [TERMUX.md](TERMUX.md). It is a beta.
 
 ## Using a Spotify playlist (one-time setup, free)
 
