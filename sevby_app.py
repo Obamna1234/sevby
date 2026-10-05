@@ -809,6 +809,107 @@ def load_songs_from_file(path: str) -> list[str]:
     return parse_song_lines(raw)
 
 
+# -- Apple Music: read a PUBLIC shared playlist / album link (no sign-in) ----------------------------
+
+def _apple_artist(obj) -> str:
+    if isinstance(obj, dict):
+        return str(obj.get("name") or "").strip()
+    if isinstance(obj, list):
+        return ", ".join(x for x in (_apple_artist(o) for o in obj) if x)
+    return str(obj or "").strip()
+
+
+def _apple_from_jsonld(html: str) -> tuple[str, list[str]]:
+    """Songs from the page's built-in schema.org data (MusicPlaylist / MusicAlbum)."""
+    name, songs = "", []
+    for m in re.finditer(r'<script[^>]*type="application/ld\+json"[^>]*>(.*?)</script>', html, re.S | re.I):
+        try:
+            data = json.loads(m.group(1))
+        except ValueError:
+            continue
+        for node in (data if isinstance(data, list) else [data]):
+            if not isinstance(node, dict):
+                continue
+            tracks = node.get("track") or node.get("tracks")
+            if not isinstance(tracks, list) or not tracks:
+                continue
+            owner = _apple_artist(node.get("byArtist"))
+            found = []
+            for t in tracks:
+                if not isinstance(t, dict):
+                    continue
+                title = str(t.get("name") or "").strip()
+                artist = _apple_artist(t.get("byArtist")) or owner
+                if title and artist:
+                    found.append(f"{artist} - {title}")
+            if len(found) > len(songs):
+                songs, name = found, str(node.get("name") or "").strip()
+    return name, songs
+
+
+def _apple_from_server_data(html: str) -> list[str]:
+    """Fallback: pull (title, artist) pairs out of the page's embedded app data."""
+    m = re.search(r'<script[^>]*id="serialized-server-data"[^>]*>(.*?)</script>', html, re.S | re.I)
+    if not m:
+        return []
+    try:
+        data = json.loads(m.group(1))
+    except ValueError:
+        return []
+    out: list[str] = []
+
+    def walk(o):
+        if isinstance(o, dict):
+            title, artist = o.get("title"), o.get("artistName")
+            if isinstance(title, str) and isinstance(artist, str) and title and artist and "contentDescriptor" in o:
+                kind = ((o.get("contentDescriptor") or {}).get("kind") or "")
+                if kind in ("song", ""):
+                    line = f"{artist} - {title}"
+                    if line not in out:
+                        out.append(line)
+            for v in o.values():
+                walk(v)
+        elif isinstance(o, list):
+            for v in o:
+                walk(v)
+
+    walk(data)
+    return out
+
+
+def fetch_apple_playlist(url: str) -> tuple[str, list[str]]:
+    """(name, ['Artist - Title', ...]) for a shared Apple Music playlist or album link.
+    Only works for links anyone can open (Share > Copy Link). Raises ValueError with a plain message."""
+    url = (url or "").strip().split()[0] if (url or "").strip() else ""
+    if "music.apple.com" not in url.lower():
+        raise ValueError("That doesn't look like an Apple Music link (it should contain music.apple.com).")
+    url = re.sub(r"//embed\.music\.apple\.com", "//music.apple.com", url, flags=re.I)
+    req = urllib.request.Request(url, headers={
+        "User-Agent": BROWSER_UA, "Accept-Language": "en-US,en;q=0.9",
+        "Accept": "text/html,application/xhtml+xml",
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=25) as resp:
+            html = resp.read().decode("utf-8", errors="replace")
+    except urllib.error.HTTPError as e:
+        raise ValueError(f"Apple Music said no (HTTP {e.code}). Is the playlist public (Share > Copy Link)?")
+    except Exception as e:
+        raise ValueError(f"Couldn't reach Apple Music ({e}). Check your internet connection.")
+    name, songs = _apple_from_jsonld(html)
+    if not songs:
+        songs = _apple_from_server_data(html)
+    if not name:
+        mt = re.search(r'<meta[^>]+property="og:title"[^>]+content="([^"]+)"', html, re.I)
+        if mt:
+            import html as _h
+
+            name = re.split(r"\s+(?:on|by)\s+Apple Music", _h.unescape(mt.group(1)))[0].strip(" \u200e\u200f-")
+    if not songs:
+        raise ValueError("I couldn't find any songs on that page. The playlist may be private, or Apple changed "
+                         "its page. Try another export method (see the README).")
+    return name, songs
+
+
 # \u2500\u2500 Downloading (Bandcamp + YouTube, both via yt-dlp) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
 def ffmpeg_path() -> str:
@@ -2120,9 +2221,16 @@ class SevbyApp(_SevbyBase):
                                              hover_color="#2a2a30", text_color=C_TEXT,
                                              command=self.clear_songs)
         self.clear_songs_btn.pack(side="left", padx=(8, 0))
-        self.chosic_btn = ctk.CTkButton(btn_row, text="Open Chosic (export playlist to .txt)", width=250, height=30, fg_color=C_BG,
-                                        hover_color="#2a2a30", text_color=C_TEXT, command=self.open_chosic)
-        self.chosic_btn.pack(side="left", padx=(8, 0))
+        self.count_label_row = btn_row
+        btn_row2 = ctk.CTkFrame(self.txt_frame, fg_color="transparent")
+        btn_row2.pack(fill="x", padx=12, pady=(0, 6))
+        self.chosic_btn = ctk.CTkButton(btn_row2, text="Open Chosic (export playlist to .txt)", width=250, height=30,
+                                        fg_color=C_BG, hover_color="#2a2a30", text_color=C_TEXT,
+                                        command=self.open_chosic)
+        self.chosic_btn.pack(side="left")
+        self.apple_btn = ctk.CTkButton(btn_row2, text="Apple Music link", width=140, height=30, fg_color=C_BG,
+                                       hover_color="#2a2a30", text_color=C_TEXT, command=self.open_apple_dialog)
+        self.apple_btn.pack(side="left", padx=(8, 0))
         self.count_label = ctk.CTkLabel(btn_row, text="0 songs", text_color=C_MUTED)
         self.count_label.pack(side="right")
         self.add_btn = ctk.CTkButton(self.txt_frame, text="Add to queue", height=34, fg_color="transparent",
@@ -2345,7 +2453,7 @@ class SevbyApp(_SevbyBase):
         st = "normal" if enabled else "disabled"
         for w in (self.songs_box, self.folder_entry):
             w.configure(state=st)
-        for w in (self.load_btn, self.clear_songs_btn, self.add_btn, self.browse_btn, self.chosic_btn,
+        for w in (self.load_btn, self.clear_songs_btn, self.add_btn, self.browse_btn, self.chosic_btn, self.apple_btn,
                   *self.source_radios, *self.mode_radios):
             w.configure(state=st)
 
@@ -2709,6 +2817,79 @@ class SevbyApp(_SevbyBase):
             "2) Download / copy the song list as text\n"
             "3) Switch to \u201cSong list / .txt file\u201d in SEVBY and paste or load it"
         )
+
+    def open_apple_dialog(self):
+        """Paste a shared Apple Music playlist link; the songs are read from the public page (no sign-in)."""
+        dlg = ctk.CTkToplevel(self)
+        dlg.title("Apple Music playlist link")
+        self._apply_icon(dlg)
+        dlg.configure(fg_color=C_BG)
+        dlg.resizable(False, False)
+        dlg.transient(self)
+        w, h = 520, 330
+        self.update_idletasks()
+        x = self.winfo_rootx() + max(0, (self.winfo_width() - w) // 2)
+        y = self.winfo_rooty() + 80
+        dlg.geometry(f"{w}x{h}+{x}+{y}")
+        box = ctk.CTkFrame(dlg, fg_color=C_SURFACE, corner_radius=10)
+        box.pack(fill="both", expand=True, padx=14, pady=14)
+        ctk.CTkLabel(box, text="Apple Music playlist link", font=ctk.CTkFont(size=15, weight="bold"),
+                     anchor="w").pack(fill="x", padx=14, pady=(12, 2))
+        ctk.CTkLabel(box, justify="left", anchor="w", wraplength=470, text_color=C_MUTED,
+                     font=ctk.CTkFont(size=12),
+                     text="In Apple Music open the playlist, tap Share, then Copy Link, and paste it here. "
+                          "No sign-in needed. It only works for playlists anyone can open (not private ones). "
+                          "If it doesn't work, use File > Library > Export Playlist on a Mac, or a converter "
+                          "such as TuneMyMusic (see the README).").pack(fill="x", padx=14, pady=(0, 8))
+        entry = ctk.CTkEntry(box, placeholder_text="https://music.apple.com/.../playlist/...")
+        entry.pack(fill="x", padx=14, pady=4)
+        try:
+            clip = self.clipboard_get().strip()
+            if "music.apple.com" in clip:
+                entry.insert(0, clip)
+        except Exception:
+            pass
+        status = ctk.CTkLabel(box, text="", anchor="w", justify="left", wraplength=470, text_color=C_MUTED)
+        status.pack(fill="x", padx=14, pady=(4, 0))
+        go = ctk.CTkButton(box, text="Get songs", height=38, fg_color=C_ACCENT, hover_color=C_ACCENT_H,
+                           text_color=C_ON_ACCENT)
+        go.pack(fill="x", padx=14, pady=(8, 12))
+
+        def done(name, songs, err):
+            if err:
+                status.configure(text=err, text_color=C_ERR)
+                go.configure(state="normal", text="Get songs")
+                return
+            self.songs_box.configure(state="normal")
+            self.songs_box.delete("1.0", "end")
+            self.songs_box.insert("1.0", "\n".join(songs))
+            self._loaded_name = name or "Apple Music playlist"
+            self.mode.set("txt")
+            self._switch_mode()
+            self.log(f"Loaded {len(songs)} songs from Apple Music: {name}")
+            dlg.destroy()
+
+        def work(url):
+            try:
+                name, songs = fetch_apple_playlist(url)
+                err = None
+            except ValueError as e:
+                name, songs, err = "", [], str(e)
+            except Exception as e:
+                name, songs, err = "", [], f"Something went wrong: {e}"
+            self.after(0, lambda: done(name, songs, err))
+
+        def click():
+            url = entry.get().strip()
+            if not url:
+                status.configure(text="Paste the link first.", text_color=C_ERR)
+                return
+            go.configure(state="disabled", text="Getting songs\u2026")
+            status.configure(text="", text_color=C_MUTED)
+            threading.Thread(target=work, args=(url,), daemon=True).start()
+        go.configure(command=click)
+        entry.bind("<Return>", lambda _e: click())
+        dlg.after(200, entry.focus_set)
 
     def _apply_icon(self, win):
         """Replace CustomTkinter's default blue icon with ours (window + taskbar)."""

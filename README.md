@@ -16,7 +16,7 @@ SEVBY looks for each song on **Bandcamp** first, and falls back to **YouTube** f
 
 > **Looking for better quality?** There is also **SEVBY HQ**, an audiophile edition that keeps YouTube's original audio (M4A), checks Jamendo and the Internet Archive for free lossless files first, and labels the quality of every song: <https://github.com/Obamna1234/sevby-hq>. SEVBY (this one) is the simple, everything-as-MP3 version.
 
-- Paste a Spotify playlist link (public or private; needs a Spotify Client ID, see below) **or** a list / `.txt` file of `Artist - Title` lines (CSV and M3U files work too)
+- Paste a Spotify playlist link (public or private; needs a Spotify Client ID, see below), **or** a list / `.txt` file of `Artist - Title` lines (CSV and M3U files work too), **or** a shared **Apple Music playlist link** with the *Apple Music link* button (no sign-in; public playlists only, and it reads Apple's public web page, so it may stop working if Apple changes it)
 - Bandcamp first, YouTube for the rest (or choose *Bandcamp only* / *YouTube only*)
 - MP3 files with title, artist, album, year, track number and square cover art
 - YouTube matching picks the version with the right length and avoids live / remix / sped-up uploads
