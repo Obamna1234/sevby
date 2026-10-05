@@ -12,7 +12,7 @@
 <img width="680" height="829" alt="image" src="https://github.com/user-attachments/assets/2946097a-d7a3-473a-a860-c484c7692373" />
 
 
-*SEVBY running a Spotify playlist*
+*SEVBY's Spotify playlist mode (needs a Spotify Client ID, see below)*
 
 
 Turn a Spotify playlist (or a plain text list of songs) into tagged MP3s on your own computer.
@@ -42,7 +42,9 @@ From source you also need **ffmpeg** (put `ffmpeg.exe` / `ffmpeg` next to `sevby
 
 ## Using a Spotify playlist (one-time setup)
 
-Spotify requires every app to have its own Client ID. You only do this once. **Spotify currently requires a Premium account to use its Web API, so a free Spotify account may not be able to create one.** If you don't have Premium, use the text-list method below instead.
+Spotify requires every app to have its own Client ID. You only do this once. **Spotify currently requires a Premium account ...** If you don't have Premium, use the text-list method below instead.
+
+Note: I can't create a Client ID myself (no Premium account), so the Spotify mode has had little testing. The song-list (.txt) mode is the one I use and have tested. If Spotify mode doesn't work for you, please open an Issue with the error message.
 
 1. Go to <https://developer.spotify.com/dashboard> and log in.
 2. Click **Create app**. Use any name and description.
@@ -113,12 +115,12 @@ Scan of the original v0.9.0-beta Windows file on 2026-10-04: 3 of 69 engines fla
 
 
 <img width="2529" height="1209" alt="image" src="https://github.com/user-attachments/assets/08b75d06-7340-4f64-9905-e04055f14b2a" />
-Scan of the v0.9.1-beta Windows file on 2026-10-05: 4 of 69 engines flag it (Microsoft Trojan:Win32/Wacatac.C!ml, McAfee, Zillya and Bkav). These are generic detections that commonly hit unsigned PyInstaller apps, and I believe they are false positives. I have submitted the file to the vendors for review. The full source code is in this repo and the release files are built by the GitHub Actions workflow, so you can check them yourself or run SEVBY from source instead. Full scan: <[paste your VirusTotal link here](https://www.virustotal.com/gui/file/a30f7170a89658d3fb41d5dd2c4f134d4bf26a7996d0302d3e7d01f3a5a44d89?nocache=1)>
+Scan of the v0.9.1-beta Windows file on 2026-10-05: 4 of 69 engines flag it (Microsoft Trojan:Win32/Wacatac.C!ml, McAfee, Zillya and Bkav). These are generic detections that commonly hit unsigned PyInstaller apps, and I believe they are false positives. I have submitted the file to the vendors for review. The full source code is in this repo and the release files are built by the GitHub Actions workflow, so you can check them yourself or run SEVBY from source instead. Full scan: <https://www.virustotal.com/gui/file/a30f7170a89658d3fb41d5dd2c4f134d4bf26a7996d0302d3e7d01f3a5a44d89>
 
 
 
 <img width="598" height="356" alt="image" src="https://github.com/user-attachments/assets/9f4c0a2a-5d83-49ec-a900-8f471ab27aba" />
-
+*What AVG/Avast shows the first time it sees a new file: it sends the file to its lab and holds it for a few hours. This is normal for unknown, unsigned programs and is not a detection of malware.*
 
 ## Disclaimer
 
