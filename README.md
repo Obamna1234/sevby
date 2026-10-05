@@ -2,14 +2,21 @@
 
 # SEVBY: Playlist to MP3
 
-<img width="677" height="827" alt="image" src="https://github.com/user-attachments/assets/67837605-dd38-4f90-9a44-0b76e37801aa" />
+<img width="761" height="929" alt="image" src="https://github.com/user-attachments/assets/4bd6e3b6-e6ba-4736-b07c-8d90a4f373d9" />
+
 
 *SEVBY running a .txt file (screenshot of the previous window; the new layout is described below)*
 
-<img width="677" height="828" alt="image" src="https://github.com/user-attachments/assets/88569e0c-0281-4825-beb7-12afde1dda84" />
+<img width="756" height="930" alt="image" src="https://github.com/user-attachments/assets/af5f88cd-f03a-4a6d-b6b2-e1a767c043e6" />
+
 
 *SEVBY running a Spotify playlist*
 
+<img width="759" height="930" alt="image" src="https://github.com/user-attachments/assets/a4db3cb9-5ebc-48be-9014-c1ca1c3b6189" />
+_*SEVBY exporting a Apple Music playlist link to .txt*_
+
+<img width="761" height="930" alt="image" src="https://github.com/user-attachments/assets/715068e5-b6cc-4db2-a141-bbacb2bb9d13" />
+_*SEVBY About & Updates window*_
 
 Turn a Spotify playlist (or a plain text list of songs) into tagged MP3s on your own computer.
 SEVBY looks for each song on **Bandcamp** first, and falls back to **YouTube** for anything it can't find.
