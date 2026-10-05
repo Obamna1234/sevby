@@ -26,7 +26,10 @@ object Matching {
 
     private val WORD = Regex("""[\p{L}\p{N}_]+""")
 
-    fun words(s: String): List<String> = WORD.findAll(s.lowercase()).map { it.value }.toList()
+    /** "&" counts as the word "and" ("In Shadows & Dust" = "In Shadows and Dust"). */
+    private fun ampersand(s: String): String = s.replace("&", " and ")
+
+    fun words(s: String): List<String> = WORD.findAll(ampersand(s).lowercase()).map { it.value }.toList()
 
     private fun hasWord(text: String, w: String): Boolean =
         Regex("""(?<![\p{L}\p{N}_])""" + Regex.escape(w) + """(?![\p{L}\p{N}_])""").containsMatchIn(text)
@@ -76,8 +79,8 @@ object Matching {
     /** Title without "(feat. X)", "(Remastered)", "(Original Mix)" and "- 2011 Remaster" parts. */
     fun cleanTitle(t: String): String = t.replace(NOISE, "").replace(REMASTER_SUFFIX, "").trim()
 
-    /** Lowercase letters and digits only, for comparing names ("M.A.D.E.S" = "mades"). */
-    fun norm(s: String): String = s.lowercase().filter { it.isLetterOrDigit() }
+    /** Lowercase letters and digits only, for comparing names ("M.A.D.E.S" = "mades", "&" = "and"). */
+    fun norm(s: String): String = ampersand(s).lowercase().filter { it.isLetterOrDigit() }
 
     fun fmtLen(sec: Double?): String {
         if (sec == null || sec <= 0) return "?:??"

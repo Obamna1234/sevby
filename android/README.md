@@ -34,6 +34,11 @@ desktop releases (`v…`). The version shown in the app comes from the tag.
 4. Publishing creates the tag, which starts the **Build Android APK** workflow. After ~10 minutes the signed APKs
    appear on the release.
 
+Once the APKs are on the release, everyone's app shows **"SEVBY x.y.z is available"** within a day (it checks
+GitHub's releases list for the newest `android-v…` release with APKs; drafts are ignored). Tapping *Download* opens
+the APK for their phone in the browser, and it installs over the old version because it's signed with the same key.
+Use a higher version in each new tag (e.g. `android-v0.1.1-beta`, `android-v0.2.0`).
+
 A manual run with **publish** ticked re-uploads the APKs to the newest `android-v…` release.
 The desktop workflow's monthly rebuild skips `android-v…` releases.
 

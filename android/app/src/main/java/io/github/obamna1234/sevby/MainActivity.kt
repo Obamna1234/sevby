@@ -131,6 +131,12 @@ class MainActivity : AppCompatActivity() {
         b.retryFailed.setOnClickListener { retryFailed() }
         b.about.setOnClickListener { startActivity(Intent(this, EngineCheckActivity::class.java)) }
         b.updateNow.setOnClickListener { updateYtDlp() }
+        b.appUpdateNow.setOnClickListener { AppUpdate.available(this, prefs)?.let { offerAppUpdate(it) } }
+        showAppUpdateRow()
+        lifecycleScope.launch {
+            AppUpdate.checkDaily(this@MainActivity, prefs)
+            showAppUpdateRow()
+        }
 
         // Log box: fold away / details / copy
         setLogCollapsed(prefs.logCollapsed)
@@ -189,6 +195,29 @@ class MainActivity : AppCompatActivity() {
         val available = latest.isNotEmpty() && installedVersion.isNotEmpty() && Engine.isNewer(latest, installedVersion)
         b.updateRow.visibility = if (available) View.VISIBLE else View.GONE
         if (available) b.updateText.text = "A newer yt-dlp ($latest) is available"
+    }
+
+    // ── New SEVBY version ───────────────────────────────────────────────
+
+    private fun showAppUpdateRow() {
+        val rel = AppUpdate.available(this, prefs)
+        b.appUpdateRow.visibility = if (rel != null) View.VISIBLE else View.GONE
+        if (rel != null) b.appUpdateText.text = "SEVBY ${rel.version} is available"
+    }
+
+    private fun offerAppUpdate(rel: AppRelease) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Update SEVBY to ${rel.version}?")
+            .setMessage("Your browser downloads the new version. When it's done, open it and tap Update. " +
+                "Your folder, settings and queue are kept." +
+                if (Runner.state.value.running) "\n\nDownloads are running – updating stops them. You can press Resume afterwards." else "")
+            .setPositiveButton("Download") { _, _ ->
+                if (!AppUpdate.open(this, rel.apkUrl)) toast("No browser found to download the update")
+                else toast("Downloading SEVBY ${rel.version} – open it when it's finished")
+            }
+            .setNeutralButton("What's new") { _, _ -> AppUpdate.open(this, rel.pageUrl) }
+            .setNegativeButton("Later", null)
+            .show()
     }
 
     private fun updateYtDlp() {

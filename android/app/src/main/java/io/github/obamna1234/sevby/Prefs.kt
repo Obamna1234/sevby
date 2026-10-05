@@ -28,6 +28,20 @@ class Prefs(context: Context) {
         get() = sp.getLong("last_update_check", 0L)
         set(v) = sp.edit { putLong("last_update_check", v) }
 
+    /** Newest SEVBY for Android release seen on GitHub (checked once a day). */
+    var lastAppCheck: Long
+        get() = sp.getLong("last_app_check", 0L)
+        set(v) = sp.edit { putLong("last_app_check", v) }
+    var latestApp: String
+        get() = sp.getString("latest_app", "") ?: ""
+        set(v) = sp.edit { putString("latest_app", v) }
+    var latestAppApk: String
+        get() = sp.getString("latest_app_apk", "") ?: ""
+        set(v) = sp.edit { putString("latest_app_apk", v) }
+    var latestAppPage: String
+        get() = sp.getString("latest_app_page", "") ?: ""
+        set(v) = sp.edit { putString("latest_app_page", v) }
+
     var latestYtDlp: String
         get() = sp.getString("latest_ytdlp", "") ?: ""
         set(v) = sp.edit { putString("latest_ytdlp", v) }

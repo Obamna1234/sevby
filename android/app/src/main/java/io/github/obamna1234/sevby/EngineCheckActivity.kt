@@ -47,7 +47,48 @@ class EngineCheckActivity : AppCompatActivity() {
         b.pretendBlocked.isChecked = prefs.pretendBandcampBlocked
         b.pretendBlocked.setOnCheckedChangeListener { _, on -> prefs.pretendBandcampBlocked = on }
 
+        b.appUpdateButton.setOnClickListener { appUpdateClicked() }
+        showAppUpdate(AppUpdate.available(this, prefs), checked = false)
         lifecycleScope.launch { checkEngine() }
+    }
+
+    private fun toast(s: String) = Toast.makeText(this, s, Toast.LENGTH_LONG).show()
+
+    // ── SEVBY app updates ───────────────────────────────────────────────
+
+    private fun showAppUpdate(rel: AppRelease?, checked: Boolean) {
+        if (rel != null) {
+            b.appUpdateStatus.text = "Update available: ${rel.version}"
+            b.appUpdateStatus.setTextColor(getColor(R.color.accent))
+            b.appUpdateButton.text = "Download ${rel.version}"
+        } else {
+            b.appUpdateStatus.text = "Version ${AppUpdate.currentVersion(this)}" + if (checked) " · Up to date ✓" else ""
+            b.appUpdateStatus.setTextColor(getColor(R.color.muted))
+            b.appUpdateButton.text = "Check for app updates"
+        }
+    }
+
+    private fun appUpdateClicked() {
+        val prefs = Prefs(this)
+        val rel = AppUpdate.available(this, prefs)
+        if (rel != null) {
+            if (AppUpdate.open(this, rel.apkUrl)) toast("Downloading SEVBY ${rel.version} – open it when it's finished and tap Update")
+            else toast("No browser found to download the update")
+            return
+        }
+        b.appUpdateButton.isEnabled = false
+        b.appUpdateButton.text = "Checking…"
+        lifecycleScope.launch {
+            val before = prefs.lastAppCheck
+            val found = AppUpdate.checkDaily(this@EngineCheckActivity, prefs, force = true)
+            b.appUpdateButton.isEnabled = true
+            if (found == null && prefs.lastAppCheck == before) {
+                showAppUpdate(null, checked = false)
+                toast("Couldn't check for updates – are you online?")
+            } else {
+                showAppUpdate(found, checked = true)
+            }
+        }
     }
 
     private fun line(s: String = "") {

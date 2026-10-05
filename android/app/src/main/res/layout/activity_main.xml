@@ -44,6 +44,34 @@
             android:textColor="@color/muted"
             android:textSize="12sp" />
 
+        <!-- New SEVBY version available (checked once a day) -->
+        <LinearLayout
+            android:id="@+id/appUpdateRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:background="@color/surface"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/appUpdateText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="@color/accent"
+                android:textSize="13sp" />
+
+            <Button
+                android:id="@+id/appUpdateNow"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Download" />
+        </LinearLayout>
+
         <LinearLayout
             android:id="@+id/updateRow"
             android:layout_width="match_parent"

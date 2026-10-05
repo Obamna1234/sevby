@@ -8,6 +8,7 @@ track number and square cover art (album details from Bandcamp or Apple's iTunes
 - Pause / Resume / Stop, also from the notification; after Stop, **Resume** carries on where it left off
 - Skips songs already in the folder, never makes "(1)" copies, *Retry failed* for the misses
 - Update the downloader (yt-dlp) from **About & updates** when YouTube changes – no reinstall needed
+- Tells you when a new SEVBY version is out (banner on the main screen and in **About & updates**); one tap downloads it and it installs over the old one, keeping your settings
 - **Apple Music**: paste a public Apple Music playlist or album link and SEVBY fills in the song list (no sign-in)
 - Got a Spotify playlist? The **Open Chosic** button turns it into a song list to paste
 - If Bandcamp blocks your connection (some mobile networks and hotspots do), it falls back to YouTube
