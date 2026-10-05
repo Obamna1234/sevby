@@ -3,6 +3,7 @@ package io.github.obamna1234.sevby
 import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.res.ColorStateList
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -18,6 +19,7 @@ import android.text.style.RelativeSizeSpan
 import android.text.style.StyleSpan
 import android.view.Gravity
 import android.view.View
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -28,6 +30,7 @@ import androidx.core.widget.doAfterTextChanged
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import androidx.lifecycle.repeatOnLifecycle
 import io.github.obamna1234.sevby.databinding.ActivityMainBinding
 import kotlinx.coroutines.Dispatchers
@@ -82,11 +85,17 @@ class MainActivity : AppCompatActivity() {
         b.songs.doAfterTextChanged {
             prefs.draft = it?.toString().orEmpty()
             updateCount()
+            // A different list can't be "resumed": the button goes back to Start.
+            if (!Runner.state.value.running && prefs.resume.isNotEmpty()) { prefs.resume = emptyList(); refreshQueue() }
         }
+        setLabel(b.loadTxt, "Load .txt", null)
+        setLabel(b.chosic, "Open Chosic", "export to .txt")
+        setLabel(b.appleMusic, "Apple Music", "paste link")
         b.loadTxt.setOnClickListener {
             pickTxt.launch(arrayOf("text/*", "application/csv", "application/vnd.ms-excel"))
         }
         b.chosic.setOnClickListener { openChosic() }
+        b.appleMusic.setOnClickListener { askAppleMusicLink() }
         b.clearSongs.setOnClickListener {
             b.songs.setText("")
             prefs.listName = ""
@@ -201,10 +210,19 @@ class MainActivity : AppCompatActivity() {
 
     private fun songs() = SongList.parse(b.songs.text?.toString().orEmpty())
 
+    /** Button text with an optional smaller second line. */
+    private fun setLabel(button: android.widget.Button, main: String, sub: String?) {
+        if (sub == null) { button.text = main; return }
+        val t = SpannableStringBuilder(main).append('\n')
+        val at = t.length
+        t.append(sub)
+        t.setSpan(RelativeSizeSpan(0.78f), at, t.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        button.text = t
+    }
+
     private fun updateCount() {
         val n = songs().size
         b.songCount.text = when (n) {
-            0 -> ""
             1 -> "1 song"
             else -> "$n songs"
         }
@@ -268,11 +286,21 @@ class MainActivity : AppCompatActivity() {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
             }
-            row.addView(TextView(this).apply {
+            val left = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            }
+            left.addView(TextView(this).apply {
                 text = "${i + 1}. ${item.name} · ${item.songs.size} songs"
                 setTextColor(ContextCompat.getColor(this@MainActivity, R.color.text))
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             })
+            left.addView(TextView(this).apply {
+                val base = folder()?.name ?: "(save folder)"
+                text = "Saves to: " + (item.subfolder?.let { "$base/$it" } ?: base)
+                textSize = 12f
+                setTextColor(ContextCompat.getColor(this@MainActivity, R.color.muted))
+            })
+            row.addView(left)
             row.addView(TextView(this).apply {
                 text = "✕"
                 textSize = 18f
@@ -290,7 +318,15 @@ class MainActivity : AppCompatActivity() {
             b.queueList.addView(row)
         }
         b.addToQueue.isEnabled = !running
-        if (!running) b.start.text = if (q.isNotEmpty()) "Start queue (${q.size})" else "Start"
+        if (!running) {
+            val canResume = prefs.resume.isNotEmpty()
+            b.start.text = when {
+                q.isNotEmpty() && canResume -> "Resume (${q.size} list" + (if (q.size == 1) ")" else "s)")
+                q.isNotEmpty() -> "Start Download (${q.size} list" + (if (q.size == 1) ")" else "s)")
+                canResume -> "Resume"
+                else -> "Start Download"
+            }
+        }
     }
 
     private fun refreshRetry() {
@@ -353,6 +389,9 @@ class MainActivity : AppCompatActivity() {
             items = queue
             launchRun(items, fromQueue = true)
             return
+        } else if (prefs.resume.isNotEmpty()) {
+            // Run the stopped list again; songs that are already saved are skipped.
+            items = prefs.resume
         } else {
             val list = songs()
             if (list.isEmpty()) { toast("Add some songs first (one \"Artist - Title\" per line)."); return }
@@ -377,6 +416,7 @@ class MainActivity : AppCompatActivity() {
                 Source.YOUTUBE -> "YouTube only"
             }
             if (Runner.start(this, Job(items, prefs.folderUri!!, prefs.source, fromQueue))) {
+                prefs.resume = emptyList()
                 val songsTotal = items.sumOf { it.songs.size }
                 Runner.log("$songsTotal songs in ${items.size} list(s) → ${folder()?.name}  ·  $src" +
                     if (prefs.source != Source.YOUTUBE && prefs.pretendBandcampBlocked) "  (test: pretending Bandcamp is blocked)" else "")
@@ -420,7 +460,7 @@ class MainActivity : AppCompatActivity() {
         val s = Runner.state.value
         val text = buildString {
             s.songs.forEach { l ->
-                val mark = when (l.mark) { Mark.OK -> "✓"; Mark.SKIPPED -> "↷"; Mark.FAILED -> "✗"; Mark.HEADER -> "▸" }
+                val mark = when (l.mark) { Mark.OK -> "✓"; Mark.SKIPPED -> "✓"; Mark.FAILED -> "✗"; Mark.HEADER -> "▸" }
                 append("$mark ${l.text}").append(if (l.note.isNotEmpty()) "  ·  ${l.note}" else "").append('\n')
             }
             if (s.summary.isNotEmpty()) append(s.summary).append('\n')
@@ -456,7 +496,7 @@ class MainActivity : AppCompatActivity() {
                 return
             }
             Mark.OK -> songText.append("✓ ")
-            Mark.SKIPPED -> songText.append("↷ ")
+            Mark.SKIPPED -> songText.append("✓ ")     // already downloaded: done, shown muted
             Mark.FAILED -> songText.append("✗ ")
         }
         val markColor = when (l.mark) {
@@ -482,6 +522,97 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ── Showing the run ─────────────────────────────────────────────────
+
+    // ── Apple Music link ────────────────────────────────────────────────
+
+    /** The open Apple Music dialog (only one at a time). */
+    private var appleDialog: androidx.appcompat.app.AlertDialog? = null
+
+    /**
+     * Ask for a public Apple Music playlist/album share link (pre-filled from the clipboard), read it,
+     * and put the songs in the song box. Errors are shown in the dialog, which stays open to try again.
+     */
+    private fun askAppleMusicLink() {
+        appleDialog?.let { if (it.isShowing) return }
+        val clip = (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).primaryClip
+            ?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(this)?.toString().orEmpty()
+        val pad = (20 * resources.displayMetrics.density).toInt()
+        val input = EditText(this).apply {
+            hint = "https://music.apple.com/…/playlist/…"
+            setSingleLine()
+            setText(AppleMusicData.findLink(clip).orEmpty())
+        }
+        val status = TextView(this).apply {
+            setTextColor(color(R.color.muted))
+            textSize = 13f
+            setPadding(0, pad / 3, 0, 0)
+        }
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(pad, pad / 2, pad, 0)
+            addView(input)
+            addView(status)
+        }
+        val dlg = MaterialAlertDialogBuilder(this)
+            .setTitle("Apple Music playlist link")
+            .setMessage("In Apple Music open the playlist, tap Share → Copy Link, and paste it here. " +
+                "No sign-in needed. Only playlists anyone can open work (not private ones).")
+            .setView(box)
+            .setPositiveButton("Get songs", null)      // click handled below so the dialog can stay open
+            .setNegativeButton("Cancel", null)
+            .create()
+        dlg.setOnShowListener {
+            val go = dlg.getButton(android.content.DialogInterface.BUTTON_POSITIVE)
+            go.setOnClickListener {
+                val link = AppleMusicData.findLink(input.text.toString())
+                if (link == null) {
+                    status.setTextColor(ERROR_RED)
+                    status.text = if (input.text.isBlank()) "Paste the link first."
+                        else "That doesn't look like an Apple Music playlist or album link (music.apple.com/…)."
+                    return@setOnClickListener
+                }
+                go.isEnabled = false
+                input.isEnabled = false
+                status.setTextColor(color(R.color.muted))
+                status.text = "Reading the playlist…"
+                lifecycleScope.launch {
+                    when (val r = AppleMusic.read(link)) {
+                        is AmResult.Failed -> {
+                            status.setTextColor(ERROR_RED)
+                            status.text = r.why
+                            go.isEnabled = true
+                            input.isEnabled = true
+                        }
+                        is AmResult.Ok -> {
+                            dlg.dismiss()
+                            useAppleList(r.list)
+                        }
+                    }
+                }
+            }
+        }
+        dlg.setOnDismissListener { if (appleDialog === dlg) appleDialog = null }
+        appleDialog = dlg
+        dlg.show()
+    }
+
+    /** Fill the song box with the playlist; its name becomes the list name (queue sub-folder). */
+    private fun useAppleList(list: AmList) {
+        val name = list.name.ifEmpty { "Apple Music playlist" }
+        b.songs.setText(list.songs.joinToString("\n"))
+        prefs.listName = SongList.safeFileName(name)
+        toast("Loaded ${list.songs.size} songs from $name")
+        val total = list.declaredCount
+        if (total != null && total > list.songs.size) {
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Only part of the playlist")
+                .setMessage("Apple's page listed ${list.songs.size} of the $total songs in \"$name\", so " +
+                    "${total - list.songs.size} are missing. For big playlists, export them to text with another " +
+                    "service, or split them into smaller playlists in Apple Music.")
+                .setPositiveButton("OK", null)
+                .show()
+        }
+    }
 
     /** No Spotify login on Android: Chosic turns a playlist into "Artist - Title" text to paste or load. */
     private fun openChosic() {
@@ -556,9 +687,11 @@ class MainActivity : AppCompatActivity() {
         b.pause.visibility = if (s.running) View.VISIBLE else View.GONE
         b.pause.text = if (s.paused) "Resume" else "Pause"
         b.progressBox.visibility = if (s.running) View.VISIBLE else View.GONE
-        for (v in listOf(b.songs, b.loadTxt, b.chosic, b.clearSongs, b.chooseFolder, b.srcBoth, b.srcBandcamp, b.srcYoutube)) {
+        for (v in listOf(b.songs, b.loadTxt, b.chosic, b.appleMusic, b.clearSongs, b.chooseFolder, b.srcBoth, b.srcBandcamp, b.srcYoutube)) {
             v.isEnabled = !s.running
         }
+        b.start.backgroundTintList = ColorStateList.valueOf(color(if (s.running) R.color.stop_red else R.color.accent))
+        b.start.setTextColor(if (s.running) Color.WHITE else color(R.color.on_accent))
         if (s.running) {
             b.start.text = "Stop"
             b.progressList.visibility = if (s.itemCount > 1) View.VISIBLE else View.GONE

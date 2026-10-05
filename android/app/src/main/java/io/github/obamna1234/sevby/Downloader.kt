@@ -107,9 +107,9 @@ class Downloader(
             val size = withContext(Dispatchers.IO) { index.sizeOf(name) }
             if (size != null) {
                 if (size >= MIN_MP3_BYTES) {
-                    log("  SKIP (already in folder)")
+                    log("  SKIP (already downloaded)")
                     skipped++
-                    done(SongLine(song, Mark.SKIPPED, "already in folder"))
+                    done(SongLine(song, Mark.SKIPPED, "already downloaded"))
                     continue
                 }
                 log("  Found an incomplete copy – downloading again")
@@ -177,7 +177,7 @@ class Downloader(
                         val album = bcTrack.album.ifEmpty { bcTrack.title }
                         done(SongLine(song, Mark.OK, "Bandcamp · $album" + (if (bcTrack.year.isNotEmpty()) " (${bcTrack.year})" else "")))
                     }
-                    Saved.ALREADY_THERE -> { savedNow += name.lowercase(); skipped++; done(SongLine(song, Mark.SKIPPED, "already in folder")) }
+                    Saved.ALREADY_THERE -> { savedNow += name.lowercase(); skipped++; done(SongLine(song, Mark.SKIPPED, "already downloaded")) }
                     Saved.FAILED -> fail(song, "couldn't save the file")
                 }
                 work.listFiles()?.forEach { it.deleteRecursively() }
@@ -229,7 +229,7 @@ class Downloader(
                     done(SongLine(song, Mark.OK, "YouTube" + (tagAlbum?.let { " · $it" } ?: "") +
                         if (bandcampNote.isNotEmpty() && source == Source.BOTH) " ($bandcampNote)" else ""))
                 }
-                Saved.ALREADY_THERE -> { savedNow += name.lowercase(); skipped++; done(SongLine(song, Mark.SKIPPED, "already in folder")) }
+                Saved.ALREADY_THERE -> { savedNow += name.lowercase(); skipped++; done(SongLine(song, Mark.SKIPPED, "already downloaded")) }
                 Saved.FAILED -> fail(song, "couldn't save the file")
             }
             work.listFiles()?.forEach { it.deleteRecursively() }

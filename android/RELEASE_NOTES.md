@@ -1,13 +1,14 @@
 **First beta of SEVBY for Android** – a proper app (no Termux needed).
 
-Paste or load a `.txt` list of `Artist - Title` lines, pick a folder, press Start. SEVBY looks for each song on
+Paste or load a `.txt` list of `Artist - Title` lines, pick a folder, press **Start Download**. SEVBY looks for each song on
 **Bandcamp** first and uses **YouTube** for the rest, then saves a 128 kbps MP3 with title, artist, album, year,
 track number and square cover art (album details from Bandcamp or Apple's iTunes Search).
 
 - Queue several lists; each goes into its own sub-folder
-- Pause / Resume / Stop, also from the notification; keeps running in the background
+- Pause / Resume / Stop, also from the notification; after Stop, **Resume** carries on where it left off
 - Skips songs already in the folder, never makes "(1)" copies, *Retry failed* for the misses
 - Update the downloader (yt-dlp) from **About & updates** when YouTube changes – no reinstall needed
+- **Apple Music**: paste a public Apple Music playlist or album link and SEVBY fills in the song list (no sign-in)
 - Got a Spotify playlist? The **Open Chosic** button turns it into a song list to paste
 - If Bandcamp blocks your connection (some mobile networks and hotspots do), it falls back to YouTube
 

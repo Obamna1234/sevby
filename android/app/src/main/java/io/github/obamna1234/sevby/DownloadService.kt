@@ -53,6 +53,14 @@ class DownloadService : Service() {
         return START_NOT_STICKY
     }
 
+    private var stoppedAt = 0
+
+    /** The lists from the one that was interrupted onwards (queued ones only if still in the queue). */
+    private fun remaining(job: Job, prefs: Prefs): List<QueueItem> =
+        job.items.drop(stoppedAt).filter { item ->
+            !job.fromQueue || prefs.queue.any { it.name == item.name && it.songs == item.songs }
+        }
+
     private suspend fun run(job: Job) {
         var summary = "Stopped"
         var wasStopped = true
@@ -75,8 +83,10 @@ class DownloadService : Service() {
             val failed = mutableListOf<QueueItem>()
             var previous: Downloader? = null
             var stopped = false
+            stoppedAt = 0
 
             for ((k, item) in job.items.withIndex()) {
+                stoppedAt = k
                 if (Runner.stopRequested) { stopped = true; break }
                 // A queued list removed while an earlier one was downloading: skip it.
                 if (job.fromQueue && k > 0 && prefs.queue.none { it.name == item.name && it.songs == item.songs }) {
@@ -127,6 +137,8 @@ class DownloadService : Service() {
 
             // Remember what failed, for "Retry failed" (a stopped run keeps the old list).
             if (!stopped) prefs.failed = failed
+            // A stopped run can be resumed: the unfinished lists run again and finished songs are skipped.
+            prefs.resume = if (stopped) remaining(job, prefs) else emptyList()
             val nFailed = failed.sumOf { it.songs.size }
             wasStopped = stopped
             summary = (if (stopped) "Stopped · " else "Done · ") +
@@ -139,6 +151,7 @@ class DownloadService : Service() {
         } catch (e: Exception) {
             Runner.log("Something went wrong: ${e.message}")
             summary = "Stopped after an error"
+            prefs.resume = remaining(job, prefs)
         } finally {
             done = true
             web?.close()

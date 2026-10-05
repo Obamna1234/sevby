@@ -93,62 +93,86 @@
             android:textColorHint="@color/muted"
             android:textSize="13sp" />
 
-        <!-- Like the desktop app: two solid buttons for getting songs in, plus Clear -->
+        <!-- Ways to get songs in: a .txt file, Chosic (Spotify), or an Apple Music link.
+             Labels (with a small second line) are set in MainActivity. -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:gravity="center_vertical"
+            android:layout_marginTop="8dp"
             android:orientation="horizontal">
 
             <Button
                 android:id="@+id/loadTxt"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:paddingStart="10dp"
-                android:paddingEnd="10dp"
-                android:text="Load .txt" />
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:minHeight="52dp"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:lineSpacingMultiplier="0.9"
+                android:textSize="13sp" />
 
             <Button
                 android:id="@+id/chosic"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:paddingStart="10dp"
-                android:paddingEnd="10dp"
-                android:text="Open Chosic" />
+                android:layout_marginStart="6dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:minHeight="52dp"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:lineSpacingMultiplier="0.9"
+                android:textSize="13sp" />
 
             <Button
-                android:id="@+id/clearSongs"
-                style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:text="Clear" />
+                android:id="@+id/appleMusic"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:minHeight="52dp"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:lineSpacingMultiplier="0.9"
+                android:textSize="13sp" />
         </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="4dp"
+            android:layout_marginTop="2dp"
+            android:gravity="center_vertical"
             android:orientation="horizontal">
 
             <TextView
+                android:id="@+id/songCount"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Spotify playlist? Open Chosic to export it as a song list, then paste it here."
-                android:textColor="@color/muted"
-                android:textSize="12sp" />
-
-            <TextView
-                android:id="@+id/songCount"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
+                android:text="0 songs"
                 android:textColor="@color/muted" />
+
+            <Button
+                android:id="@+id/clearSongs"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:minHeight="0dp"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:text="Clear list"
+                android:textColor="@color/error"
+                android:textSize="13sp"
+                app:strokeColor="@color/error" />
         </LinearLayout>
 
         <Button
@@ -243,7 +267,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Tip: pick or create a folder such as Music › SEVBY. Android doesn't allow the top of the storage or the Download folder itself."
+            android:text="Queued lists each get their own sub-folder here."
             android:textColor="@color/muted"
             android:textSize="12sp" />
 
@@ -295,7 +319,7 @@
                 android:layout_width="0dp"
                 android:layout_height="56dp"
                 android:layout_weight="1"
-                android:text="Start"
+                android:text="Start Download"
                 android:textSize="16sp" />
 
             <Button

@@ -51,6 +51,11 @@ class Prefs(context: Context) {
         get() = runCatching { itemsFromJson(sp.getString("queue", "[]") ?: "[]") }.getOrDefault(emptyList())
         set(v) = sp.edit { putString("queue", itemsToJson(v)) }
 
+    /** What was left when the last run was stopped (the Resume button runs it again; finished songs are skipped). */
+    var resume: List<QueueItem>
+        get() = runCatching { itemsFromJson(sp.getString("resume", "[]") ?: "[]") }.getOrDefault(emptyList())
+        set(v) = sp.edit { putString("resume", itemsToJson(v)) }
+
     /** Songs that failed last time, grouped by the folder they belong in (for Retry failed). */
     var failed: List<QueueItem>
         get() = runCatching { itemsFromJson(sp.getString("failed", "[]") ?: "[]") }.getOrDefault(emptyList())
