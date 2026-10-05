@@ -2150,8 +2150,8 @@ class SevbyApp(_SevbyBase):
         self.title(f"{APP_NAME} v{VERSION}: Playlist to MP3")
         self._apply_icon(self)
         self.configure(fg_color=C_BG)
-        self.minsize(640, 700)
-        self._center_window(720, 900)
+        self.minsize(720, 700)
+        self._center_window(760, 900)
 
         cfg = load_config()
         self.run_mode: str | None = None  # which mode the running job belongs to
@@ -2214,25 +2214,25 @@ class SevbyApp(_SevbyBase):
         self.hint.bind("<Button-1>", lambda _e: self.songs_box.focus_set())
         btn_row = ctk.CTkFrame(self.txt_frame, fg_color="transparent")
         btn_row.pack(fill="x", padx=12, pady=(0, 6))
-        self.load_btn = ctk.CTkButton(btn_row, text="Load .txt", width=90, height=30, fg_color=C_BG,
+        self.load_btn = ctk.CTkButton(btn_row, text="Load .txt", width=80, height=30, fg_color=C_BG,
                                       hover_color="#2a2a30", text_color=C_TEXT, command=self.load_txt)
         self.load_btn.pack(side="left")
-        self.clear_songs_btn = ctk.CTkButton(btn_row, text="Clear", width=70, height=30, fg_color=C_BG,
-                                             hover_color="#2a2a30", text_color=C_TEXT,
-                                             command=self.clear_songs)
-        self.clear_songs_btn.pack(side="left", padx=(8, 0))
-        self.count_label_row = btn_row
-        btn_row2 = ctk.CTkFrame(self.txt_frame, fg_color="transparent")
-        btn_row2.pack(fill="x", padx=12, pady=(0, 6))
-        self.chosic_btn = ctk.CTkButton(btn_row2, text="Open Chosic (export playlist to .txt)", width=250, height=30,
+        self.chosic_btn = ctk.CTkButton(btn_row, text="Open Chosic (export playlist to .txt)", width=236, height=30,
                                         fg_color=C_BG, hover_color="#2a2a30", text_color=C_TEXT,
                                         command=self.open_chosic)
-        self.chosic_btn.pack(side="left")
-        self.apple_btn = ctk.CTkButton(btn_row2, text="Apple Music link", width=140, height=30, fg_color=C_BG,
-                                       hover_color="#2a2a30", text_color=C_TEXT, command=self.open_apple_dialog)
+        self.chosic_btn.pack(side="left", padx=(8, 0))
+        self.apple_btn = ctk.CTkButton(btn_row, text="Apple Music (paste playlist link)", width=222, height=30,
+                                       fg_color=C_BG, hover_color="#2a2a30", text_color=C_TEXT,
+                                       command=self.open_apple_dialog)
         self.apple_btn.pack(side="left", padx=(8, 0))
-        self.count_label = ctk.CTkLabel(btn_row, text="0 songs", text_color=C_MUTED)
-        self.count_label.pack(side="right")
+        count_row = ctk.CTkFrame(self.txt_frame, fg_color="transparent")
+        count_row.pack(fill="x", padx=12, pady=(0, 6))
+        self.count_label = ctk.CTkLabel(count_row, text="0 songs in the box", text_color=C_MUTED)
+        self.count_label.pack(side="left")
+        self.clear_songs_btn = ctk.CTkButton(count_row, text="Clear list (empty the box)", width=190, height=28,
+                                             fg_color="transparent", border_width=1, border_color=C_ERR,
+                                             text_color=C_ERR, hover_color="#2a2a30", command=self.clear_songs)
+        self.clear_songs_btn.pack(side="right")
         self.add_btn = ctk.CTkButton(self.txt_frame, text="Add to queue", height=34, fg_color="transparent",
                                      border_width=1, border_color=C_ACCENT, text_color=C_ACCENT,
                                      hover_color="#2a2a30", command=self.add_to_queue)
@@ -2298,8 +2298,9 @@ class SevbyApp(_SevbyBase):
                                         hover_color=C_ACCENT_H, text_color=C_ON_ACCENT,
                                         command=self.browse_folder)
         self.browse_btn.pack(side="right")
-        ctk.CTkLabel(page, text="Tip: a list from the queue is saved in its own sub-folder here.",
-                     anchor="w", text_color=C_MUTED, font=ctk.CTkFont(size=11)).pack(fill="x", padx=24)
+        ctk.CTkLabel(page, text="Tip: lists added to the queue get their own sub-folder inside this folder. A single list started on its own is saved straight into this folder.",
+                     anchor="w", text_color=C_MUTED, font=ctk.CTkFont(size=11), wraplength=650,
+                     justify="left").pack(fill="x", padx=24)
         if cfg.get("last_folder") and os.path.isdir(cfg["last_folder"]):
             self.folder_entry.insert(0, cfg["last_folder"])
 
@@ -2400,7 +2401,7 @@ class SevbyApp(_SevbyBase):
         try:
             text = self.songs_box.get("1.0", "end")
             n = len(parse_song_lines(text))
-            self.count_label.configure(text=f"{n} song" + ("" if n == 1 else "s"))
+            self.count_label.configure(text=f"{n} song" + ("" if n == 1 else "s") + " in the box")
             if text.strip():
                 self.hint.place_forget()
             else:
@@ -3314,9 +3315,17 @@ class SevbyApp(_SevbyBase):
             self.queue_title.configure(text=f"Queue ({n})")
             for i, j in enumerate(self.queue, 1):
                 row = ctk.CTkFrame(self.queue_rows, fg_color="transparent")
-                row.pack(fill="x")
-                cnt = f" \u00b7 {j['count']} songs" if j.get("count") else ""
-                ctk.CTkLabel(row, text=f"{i}. {j.get('name', 'List')}{cnt}", anchor="w").pack(side="left")
+                row.pack(fill="x", pady=(0, 4))
+                cnt = f" \u00b7 {j['count']} song" + ("" if j["count"] == 1 else "s") if j.get("count") else ""
+                left = ctk.CTkFrame(row, fg_color="transparent")
+                left.pack(side="left", fill="x", expand=True)
+                ctk.CTkLabel(left, text=f"{i}. {j.get('name', 'List')}{cnt}", anchor="w").pack(fill="x")
+                sub = j.get("subfolder")
+                dest = os.path.join(j.get("out_dir", ""), sub) if isinstance(sub, str) and sub else j.get("out_dir", "")
+                if sub is True:
+                    dest = os.path.join(j.get("out_dir", ""), "(playlist name)")
+                ctk.CTkLabel(left, text="Saves to: " + dest.replace("\\", "/"), anchor="w", text_color=C_MUTED,
+                             font=ctk.CTkFont(size=11), wraplength=560, justify="left").pack(fill="x")
                 if not j.get("_running"):
                     ctk.CTkButton(row, text="\u2715", width=26, height=22, fg_color="transparent",
                                   hover_color="#2a2a30", text_color=C_MUTED,
