@@ -3,19 +3,19 @@
 # SEVBY: Playlist to MP3
 
 
-*SEVBY v1.0.0 loading a .txt file playlist*
+*SEVBY v1.0.0 downloading from an imported .txt file playlist*
 <img width="761" height="929" alt="image" src="https://github.com/user-attachments/assets/4bd6e3b6-e6ba-4736-b07c-8d90a4f373d9" />
 
 
 
 
-*SEVBY running a Spotify playlist*
+*SEVBY SEVBY v1.0.0 UI for pasting a Spotify URL playlist*
 <img width="756" height="930" alt="image" src="https://github.com/user-attachments/assets/af5f88cd-f03a-4a6d-b6b2-e1a767c043e6" />
 
 
 
 
-_*SEVBY exporting a Apple Music playlist link to .txt*_
+_*SEVBY SEVBY v1.0.0 exporting a Apple Music playlist URL to .txt & automatically pasting into the text box*_
 <img width="759" height="930" alt="image" src="https://github.com/user-attachments/assets/a4db3cb9-5ebc-48be-9014-c1ca1c3b6189" />
 
 
@@ -24,7 +24,7 @@ _*SEVBY exporting a Apple Music playlist link to .txt*_
 
 <img width="761" height="930" alt="image" src="https://github.com/user-attachments/assets/715068e5-b6cc-4db2-a141-bbacb2bb9d13" />
 
-*Android running a .txt playlist file*_
+*SEVBY v1.0.0 on Android downloading from an imported .txt file playlis*_
 <img width="419" height="884" alt="image" src="https://github.com/user-attachments/assets/032498bc-6b4f-46b0-a93d-68cecc1948ff" />
 
 
