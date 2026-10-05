@@ -38,18 +38,20 @@ From source you also need **ffmpeg** (put `ffmpeg.exe` / `ffmpeg` next to `sevby
 
 **Android:** there is a command-line version for Termux (no window). See [TERMUX.md](TERMUX.md). It is a beta.
 
-## Using a Spotify playlist (one-time setup, free)
+## Using a Spotify playlist (one-time setup)
 
-Spotify requires every app to have a free Client ID. You only do this once:
+Spotify requires every app to have its own Client ID. You only do this once. **Spotify currently requires a Premium account to use its Web API, so a free Spotify account may not be able to create one.** If you don't have Premium, use the text-list method below instead.
 
 1. Go to <https://developer.spotify.com/dashboard> and log in.
-2. **Create app** - any name. Under **Redirect URIs** add exactly `http://127.0.0.1:8888` and save.
-3. Open the app's **Settings** and copy the **Client ID**.
-4. In SEVBY choose *Spotify playlist link*, paste the playlist link and the Client ID, pick a save folder and press **Start**.
+2. Click **Create app**. Use any name and description.
+3. Under **Redirect URIs** add exactly `http://127.0.0.1:8888` and click **Add**.
+4. Tick **Web API**, agree to the terms, and save.
+5. Open the app's **Settings** and copy the **Client ID**.
+6. In SEVBY choose *Spotify playlist link*, paste the playlist link and the Client ID, pick a save folder and press **Start**.
 
-The first time, your browser opens so you can log in to Spotify and approve access (this is what allows private playlists). It's remembered afterwards. No Client Secret is needed.
+The first time, your browser opens so you can log in to Spotify and approve access (this is what allows private playlists). It's remembered afterwards. No Client Secret is needed. You can use the same Client ID on other devices, such as your phone.
 
-Don't want to set that up? Export the playlist to text with [Chosic](https://www.chosic.com/spotify-playlist-exporter/) and use *Song list / .txt file*.
+**No Premium, or don't want to set this up?** Export the playlist to text with [Chosic](https://www.chosic.com/spotify-playlist-exporter/) and use *Song list / .txt file*. That works with any Spotify account.
 
 ## Queue (many playlists, hands-off)
 
