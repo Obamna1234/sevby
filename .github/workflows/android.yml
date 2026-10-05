@@ -4,11 +4,11 @@ on:
   push:
     branches: ["**"]
     paths: ["android/**", ".github/workflows/android.yml"]
-    tags: ["v*"]
+    tags: ["android-v*"]
   workflow_dispatch:
     inputs:
       publish:
-        description: "Also upload the APKs to the newest release"
+        description: "Also upload the APKs to the newest Android release (android-v…)"
         type: boolean
         default: false
 
@@ -37,8 +37,8 @@ jobs:
 
       - name: Version
         run: |
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            echo "SEVBY_VERSION_NAME=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          if [[ "$GITHUB_REF" == refs/tags/android-v* ]]; then
+            echo "SEVBY_VERSION_NAME=${GITHUB_REF_NAME#android-v}" >> "$GITHUB_ENV"
           else
             echo "SEVBY_VERSION_NAME=0.1.0-dev.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
           fi
@@ -50,6 +50,9 @@ jobs:
             echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/sevby.jks"
             echo "SEVBY_KEYSTORE=$RUNNER_TEMP/sevby.jks" >> "$GITHUB_ENV"
             echo "Signing with the SEVBY release key"
+          elif [[ "$GITHUB_REF" == refs/tags/android-v* ]]; then
+            echo "::error::Release builds need the signing key. Add the SEVBY_KEYSTORE_* secrets first (see android/README.md)."
+            exit 1
           else
             echo "::warning::No SEVBY_KEYSTORE_BASE64 secret - APKs are signed with a throwaway debug key. Each new build must be installed after uninstalling the old one. See android/README.md."
           fi
@@ -74,18 +77,21 @@ jobs:
           path: out/*.apk
 
       - name: Upload to release
-        if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.publish)
+        if: startsWith(github.ref, 'refs/tags/android-v') || (github.event_name == 'workflow_dispatch' && inputs.publish)
         working-directory: .
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+          if [[ "$GITHUB_REF" == refs/tags/android-v* ]]; then
             tag="$GITHUB_REF_NAME"
-            gh release view "$tag" >/dev/null 2>&1 || gh release create "$tag" --title "$tag" --notes "SEVBY $tag"
+            # Marked as a pre-release and not "Latest", so the desktop release keeps the Latest badge
+            gh release view "$tag" >/dev/null 2>&1 || gh release create "$tag" \
+              --title "SEVBY for Android ${SEVBY_VERSION_NAME}" --prerelease --latest=false \
+              --notes-file android/RELEASE_NOTES.md
           else
-            tag=$(gh release list --limit 1 --json tagName --jq '.[0].tagName')
-            if [ -z "$tag" ]; then echo "No release found"; exit 1; fi
+            tag=$(gh release list --limit 30 --json tagName --jq '[.[] | select(.tagName | startswith("android-"))][0].tagName // empty')
+            if [ -z "$tag" ]; then echo "No Android release (android-v…) found"; exit 1; fi
           fi
           echo "Uploading to $tag"
           gh release upload "$tag" out/*.apk --clobber
