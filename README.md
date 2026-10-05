@@ -21,10 +21,13 @@ _*SEVBY SEVBY v1.0.0 exporting a Apple Music playlist URL to .txt & automaticall
 
 
 
-
+*SEVBY v1.0.0 on Android downloading from an imported .txt file playlis*_
 <img width="761" height="930" alt="image" src="https://github.com/user-attachments/assets/715068e5-b6cc-4db2-a141-bbacb2bb9d13" />
 
-*SEVBY v1.0.0 on Android downloading from an imported .txt file playlis*_
+
+
+
+_*SEVBY About & Updates window*_
 <img width="419" height="884" alt="image" src="https://github.com/user-attachments/assets/032498bc-6b4f-46b0-a93d-68cecc1948ff" />
 
 
@@ -33,7 +36,7 @@ _*SEVBY SEVBY v1.0.0 exporting a Apple Music playlist URL to .txt & automaticall
 
 
 
-_*SEVBY About & Updates window*_
+
 
 Turn a Spotify playlist (or a plain text list of songs) into tagged MP3s on your own computer.
 SEVBY looks for each song on **Bandcamp** first, and falls back to **YouTube** for anything it can't find.
