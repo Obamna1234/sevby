@@ -42,7 +42,7 @@ From source you also need **ffmpeg** (put `ffmpeg.exe` / `ffmpeg` next to `sevby
 
 ## Using a Spotify playlist (one-time setup)
 
-Spotify requires every app to have its own Client ID. You only do this once. **Spotify currently requires a Premium account ...** If you don't have Premium, use the text-list method below instead.
+Spotify requires every app to have its own Client ID. You only do this once. **Spotify currently requires a Premium account to use its Web API, so a free Spotify account may not be able to create one.** If you don't have Premium, use the text-list method below instead.
 
 Note: I can't create a Client ID myself (no Premium account), so the Spotify mode has had little testing. The song-list (.txt) mode is the one I use and have tested. If Spotify mode doesn't work for you, please open an Issue with the error message.
 
@@ -108,7 +108,7 @@ SEVBY is a small interface that glues together some excellent open-source projec
 Full licence details: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Antivirus note
-Antivirus note: SEVBY is unsigned and built with PyInstaller, so some antivirus programs (e.g. AVG/Avast) may flag or delay it as an unknown file. The full source code is in this repo and the release files are built automatically by the GitHub Actions workflow. You can also run it from source (see Quick start).
+SEVBY is unsigned and built with PyInstaller, so some antivirus programs (for example Microsoft Defender or McAfee) may flag or delay it as an unknown file. The full source code is in this repo and the release files are built automatically by the GitHub Actions workflow. You can also run it from source (see Quick start). If your antivirus blocks the download, you can run it from source instead.
 
 <img width="2475" height="1223" alt="image" src="https://github.com/user-attachments/assets/7602f689-6537-4b33-a1dc-c0a382ddda59" />
 Scan of the original v0.9.0-beta Windows file on 2026-10-04: 3 of 69 engines flagged it (Bkav, McAfee and Zillya). That file has since been replaced by the current release, which is scanned below.
