@@ -2,13 +2,15 @@
 
 # SEVBY: Playlist to MP3
 
-<img width="677" height="827" alt="image" src="https://github.com/user-attachments/assets/67837605-dd38-4f90-9a44-0b76e37801aa" />
+<img width="678" height="829" alt="image" src="https://github.com/user-attachments/assets/e6911543-e5e3-4808-8b6a-baf978867f6e" />
+
 
 *SEVBY running a .txt file*
 
 
 
-<img width="677" height="828" alt="image" src="https://github.com/user-attachments/assets/88569e0c-0281-4825-beb7-12afde1dda84" />
+<img width="680" height="829" alt="image" src="https://github.com/user-attachments/assets/2946097a-d7a3-473a-a860-c484c7692373" />
+
 
 *SEVBY running a Spotify playlist*
 
@@ -107,7 +109,13 @@ Full licence details: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 Antivirus note: SEVBY is unsigned and built with PyInstaller, so some antivirus programs (e.g. AVG/Avast) may flag or delay it as an unknown file. The full source code is in this repo and the release files are built automatically by the GitHub Actions workflow. You can also run it from source (see Quick start).
 
 <img width="2475" height="1223" alt="image" src="https://github.com/user-attachments/assets/7602f689-6537-4b33-a1dc-c0a382ddda59" />
-https://www.virustotal.com/gui/file/348bacf093abe15f77455337616c0d77955364851724d54a4b4426fb94414a2c/detection
+Scan of the original v0.9.0-beta Windows file on 2026-10-04: 3 of 69 engines flagged it (Bkav, McAfee and Zillya). That file has since been replaced by the current release, which is scanned below.
+
+<img width="2529" height="1209" alt="image" src="https://github.com/user-attachments/assets/08b75d06-7340-4f64-9905-e04055f14b2a" />
+Scan of the v0.9.1-beta Windows file on 2026-10-05: 4 of 69 engines flag it (Microsoft Trojan:Win32/Wacatac.C!ml, McAfee, Zillya and Bkav). These are generic detections that commonly hit unsigned PyInstaller apps, and I believe they are false positives. I have submitted the file to the vendors for review. The full source code is in this repo and the release files are built by the GitHub Actions workflow, so you can check them yourself or run SEVBY from source instead. Full scan: <[paste your VirusTotal link here](https://www.virustotal.com/gui/file/a30f7170a89658d3fb41d5dd2c4f134d4bf26a7996d0302d3e7d01f3a5a44d89?nocache=1)>
+
+<img width="598" height="356" alt="image" src="https://github.com/user-attachments/assets/9f4c0a2a-5d83-49ec-a900-8f471ab27aba" />
+
 
 ## Disclaimer
 
