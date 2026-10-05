@@ -3,7 +3,7 @@
 # SEVBY: Playlist to MP3
 
 
-*SEVBY running a .txt file (screenshot of the previous window; the new layout is described below)*
+*SEVBY v1.0.0 loading a .txt file playlist*
 <img width="761" height="929" alt="image" src="https://github.com/user-attachments/assets/4bd6e3b6-e6ba-4736-b07c-8d90a4f373d9" />
 
 
