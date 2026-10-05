@@ -9,7 +9,7 @@ The Google Play version is outdated and will not work.
 
 ## 2. One-time setup (copy these into Termux, one line at a time)
 ```
-pkg update
+pkg upgrade
 pkg install python ffmpeg git
 pip install -U yt-dlp curl_cffi
 termux-setup-storage
@@ -47,3 +47,5 @@ Stop at any time with **Ctrl+C** (on the Termux keyboard row: CTRL then C). Fini
 - Update yt-dlp now and then: `pip install -U yt-dlp`. If downloads fail with errors like 403, this is the first thing to try.
 - Update SEVBY: `cd ~/sevby && git pull`.
 - Your files are in the `Music` folder on the phone, in your music app after a minute or two.
+- Commands are case-sensitive. If your keyboard capitalizes the first letter, turn off auto-capitalization, or paste the commands instead of typing them.
+- If a song is skipped as "exists", it was already downloaded earlier. Use a new folder with `-o` to download it again.
