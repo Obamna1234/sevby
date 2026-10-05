@@ -2120,7 +2120,7 @@ class SevbyApp(_SevbyBase):
                                              hover_color="#2a2a30", text_color=C_TEXT,
                                              command=self.clear_songs)
         self.clear_songs_btn.pack(side="left", padx=(8, 0))
-        self.chosic_btn = ctk.CTkButton(btn_row, text="Open Chosic", width=100, height=30, fg_color=C_BG,
+        self.chosic_btn = ctk.CTkButton(btn_row, text="Open Chosic (export playlist to .txt)", width=250, height=30, fg_color=C_BG,
                                         hover_color="#2a2a30", text_color=C_TEXT, command=self.open_chosic)
         self.chosic_btn.pack(side="left", padx=(8, 0))
         self.count_label = ctk.CTkLabel(btn_row, text="0 songs", text_color=C_MUTED)
@@ -2212,7 +2212,7 @@ class SevbyApp(_SevbyBase):
         # -- Start / Pause --------------------------------------------------------------------
         action_row = ctk.CTkFrame(page, fg_color="transparent")
         action_row.pack(fill="x", padx=22, pady=(16, 6))
-        self.start_btn = ctk.CTkButton(action_row, text="Start", height=46, fg_color=C_ACCENT,
+        self.start_btn = ctk.CTkButton(action_row, text="Start Download", height=46, fg_color=C_ACCENT,
                                        hover_color=C_ACCENT_H, text_color=C_ON_ACCENT,
                                        font=ctk.CTkFont(size=16, weight="bold"), command=self.start)
         self.start_btn.pack(side="left", fill="x", expand=True)
@@ -2655,7 +2655,7 @@ class SevbyApp(_SevbyBase):
             if self._cur_start:
                 t.delete(self._cur_start, "end-1c")
             self._cur_start = t.index("end-1c")
-            t.insert("end", "\u22ef ", "now")
+            t.insert("end", "NOW  ", "now")
             t.insert("end", self._cur_song + "\n")
             t.insert("end", "    " + self._cur_step + "\n", "note")
         self._sv(f)
@@ -2733,6 +2733,45 @@ class SevbyApp(_SevbyBase):
         _set()
         # CustomTkinter installs its own blue icon ~200 ms after the window opens; override it.
         win.after(300, _set)
+        # Then hand Windows the exact icon sizes it wants (taskbar / title bar), so nothing is scaled and blurry.
+        for ms in (450, 1200):
+            win.after(ms, lambda: self._win_exact_icons(win))
+
+    def _win_exact_icons(self, win):
+        try:
+            import ctypes
+
+            u = ctypes.windll.user32
+            u.LoadImageW.restype = ctypes.c_void_p
+            u.LoadImageW.argtypes = [ctypes.c_void_p, ctypes.c_wchar_p, ctypes.c_uint, ctypes.c_int,
+                                     ctypes.c_int, ctypes.c_uint]
+            u.SendMessageW.restype = ctypes.c_void_p
+            u.SendMessageW.argtypes = [ctypes.c_void_p, ctypes.c_uint, ctypes.c_void_p, ctypes.c_void_p]
+            hwnd = int(win.wm_frame(), 16) or win.winfo_id()
+            try:
+                u.GetDpiForWindow.restype = ctypes.c_uint
+                u.GetDpiForWindow.argtypes = [ctypes.c_void_p]
+                dpi = int(u.GetDpiForWindow(hwnd)) or 96
+            except Exception:
+                dpi = 96
+            scale = dpi / 96.0
+            frames = (16, 20, 24, 32, 40, 48, 64)  # sizes stored in sevbyicon.ico
+
+            def nearest(v):
+                return min(frames, key=lambda f: abs(f - v))
+
+            small = nearest(16 * scale)
+            big = nearest(24 * scale)  # the taskbar button icon
+            keep = getattr(self, "_hicons", None)
+            if keep is None:
+                keep = self._hicons = []
+            for kind, size in ((0, small), (1, big)):  # ICON_SMALL, ICON_BIG
+                h = u.LoadImageW(None, ICON_PATH, 1, size, size, 0x10)  # IMAGE_ICON, LR_LOADFROMFILE
+                if h:
+                    keep.append(h)
+                    u.SendMessageW(hwnd, 0x80, kind, h)  # WM_SETICON
+        except Exception:
+            pass
 
     def _center_window(self, width: int, height: int):
         """Place the main window in the centre of the screen."""
@@ -3107,7 +3146,7 @@ class SevbyApp(_SevbyBase):
             self.queue_card.pack_forget()
         self.clear_btn.configure(state="disabled" if self.running else "normal")
         if not self.running:
-            self.start_btn.configure(text=f"Start queue ({n})" if n else "Start")
+            self.start_btn.configure(text=f"Start Download ({n} list{'' if n == 1 else 's'})" if n else "Start Download")
 
     # -- Retry ---------------------------------------------------------------------------------
     def _show_retry(self):
@@ -3163,6 +3202,28 @@ class SevbyApp(_SevbyBase):
             self.prog_step.configure(text="Paused \u00b7 tap Resume to carry on")
             self._set_log_header("Log \u00b7 paused")
             self.log("Pausing after the current song finishes\u2026")
+
+    def sv_stopped(self, song: str):
+        """The run was stopped while this song was in progress: say clearly that it was not saved."""
+        def f(t):
+            if self._cur_start:
+                t.delete(self._cur_start, "end-1c")
+            t.insert("end", "\u25a0 ", "skip")
+            t.insert("end", song + "\n", "skip")
+            t.insert("end", "    stopped before it finished (not saved)\n", "note")
+            self._cur_start = None
+        self.after(0, lambda: self._sv(f))
+
+    def sv_pause_mark(self, on: bool):
+        """A visible line while paused, so it's clear everything above is already finished and saved."""
+        def f(t):
+            if on:
+                self._pause_start = t.index("end-1c")
+                t.insert("end", "PAUSED \u00b7 the songs above are finished and saved. Press Resume to carry on.\n", "sum")
+            elif getattr(self, "_pause_start", None):
+                t.delete(self._pause_start, "end-1c")
+                self._pause_start = None
+        self.after(0, lambda: self._sv(f))
 
     def sv_drop_now(self):
         """Remove the unfinished 'current song' entry (used when the run is stopped mid-song)."""
@@ -3258,9 +3319,18 @@ class SevbyApp(_SevbyBase):
             c = {"ok": 0, "skip": 0, "fail": 0}
             stopped = False
             for i, song in enumerate(songs, 1):
+                if PAUSE_EVENT.is_set() and not STOP_EVENT.is_set():
+                    self.sv_pause_mark(True)
+                    held = True
+                else:
+                    held = False
                 if self._checkpoint():
+                    if held:
+                        self.sv_pause_mark(False)
                     stopped = True
                     break
+                if held:
+                    self.sv_pause_mark(False)
                 self.sv_now(i, n, song)
                 self.log("-" * 40)
                 self.log(f"[{i}/{n}] {song}")
@@ -3272,7 +3342,7 @@ class SevbyApp(_SevbyBase):
                     self.log(f"  Unexpected error: {e}")
                     res = {"status": "fail", "note": "unexpected error (see Details)"}
                 if STOP_EVENT.is_set() and res.get("status") == "fail" and res.get("note") == "stopped":
-                    self.sv_drop_now()
+                    self.sv_stopped(song)
                     stopped = True
                     break
                 st = res.get("status")
