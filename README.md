@@ -23,6 +23,14 @@ _*SEVBY exporting a Apple Music playlist link to .txt*_
 <img width="761" height="930" alt="image" src="https://github.com/user-attachments/assets/715068e5-b6cc-4db2-a141-bbacb2bb9d13" />
 
 
+<img width="419" height="884" alt="image" src="https://github.com/user-attachments/assets/032498bc-6b4f-46b0-a93d-68cecc1948ff" />
+
+
+
+*Android running a .txt playlist file*_
+
+
+
 _*SEVBY About & Updates window*_
 
 Turn a Spotify playlist (or a plain text list of songs) into tagged MP3s on your own computer.
