@@ -16,7 +16,7 @@
 Turn a Spotify playlist (or a plain text list of songs) into tagged MP3s on your own computer.
 SEVBY looks for each song on **Bandcamp** first, and falls back to **YouTube** for anything it can't find.
 
-- Paste a Spotify playlist link (public or private) **or** a list / `.txt` file of `Artist - Title` lines
+- Paste a Spotify playlist link (public or private; needs a Spotify Client ID, see below) **or** a list / `.txt` file of `Artist - Title` lines
 - Bandcamp first, YouTube for the rest (or choose *Bandcamp only* / *YouTube only*)
 - MP3 files with title, artist, album, year, track number and square cover art
 - YouTube matching picks the version with the right length and avoids live / remix / sped-up uploads
