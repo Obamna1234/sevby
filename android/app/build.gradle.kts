@@ -17,7 +17,7 @@ android {
         minSdk = 24
         targetSdk = 34
         versionCode = (System.getenv("SEVBY_VERSION_CODE") ?: "1").toInt()
-        versionName = System.getenv("SEVBY_VERSION_NAME") ?: "0.1.0-dev (stage 3.3)"
+        versionName = System.getenv("SEVBY_VERSION_NAME") ?: "0.1.0-beta"
 
         ndk {
             abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86_64")

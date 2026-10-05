@@ -28,7 +28,7 @@
             android:name=".EngineCheckActivity"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
             android:exported="false"
-            android:label="Engine check" />
+            android:label="About &amp; updates" />
 
         <service
             android:name=".DownloadService"

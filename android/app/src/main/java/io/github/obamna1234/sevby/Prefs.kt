@@ -2,6 +2,8 @@ package io.github.obamna1234.sevby
 
 import android.content.Context
 import androidx.core.content.edit
+import org.json.JSONArray
+import org.json.JSONObject
 
 enum class Source { BOTH, BANDCAMP, YOUTUBE }
 
@@ -34,8 +36,50 @@ class Prefs(context: Context) {
         get() = sp.getBoolean("asked_notifications", false)
         set(v) = sp.edit { putBoolean("asked_notifications", v) }
 
+    /** Testing only: act as if Bandcamp blocked every request (checks the YouTube fallback). */
+    var pretendBandcampBlocked: Boolean
+        get() = sp.getBoolean("pretend_bc_blocked", false)
+        set(v) = sp.edit { putBoolean("pretend_bc_blocked", v) }
+
     /** Name of the loaded .txt (without extension); used later as the queue item's sub-folder. */
     var listName: String
         get() = sp.getString("list_name", "") ?: ""
         set(v) = sp.edit { putString("list_name", v) }
+
+    /** Lists waiting to be downloaded (Add to queue). */
+    var queue: List<QueueItem>
+        get() = runCatching { itemsFromJson(sp.getString("queue", "[]") ?: "[]") }.getOrDefault(emptyList())
+        set(v) = sp.edit { putString("queue", itemsToJson(v)) }
+
+    /** Songs that failed last time, grouped by the folder they belong in (for Retry failed). */
+    var failed: List<QueueItem>
+        get() = runCatching { itemsFromJson(sp.getString("failed", "[]") ?: "[]") }.getOrDefault(emptyList())
+        set(v) = sp.edit { putString("failed", itemsToJson(v)) }
+
+    /** Whether the log box is folded away. */
+    var logCollapsed: Boolean
+        get() = sp.getBoolean("log_collapsed", false)
+        set(v) = sp.edit { putBoolean("log_collapsed", v) }
+
+    companion object {
+        fun itemsToJson(items: List<QueueItem>): String = JSONArray().apply {
+            items.forEach { q ->
+                put(JSONObject().put("name", q.name).put("sub", q.subfolder ?: JSONObject.NULL)
+                    .put("songs", JSONArray().apply { q.songs.forEach { put(it) } }))
+            }
+        }.toString()
+
+        fun itemsFromJson(s: String): List<QueueItem> {
+            val arr = JSONArray(s)
+            return (0 until arr.length()).map { i ->
+                val o = arr.getJSONObject(i)
+                val songs = o.getJSONArray("songs")
+                QueueItem(
+                    name = o.optString("name"),
+                    songs = (0 until songs.length()).map { songs.getString(it) },
+                    subfolder = if (o.isNull("sub")) null else o.optString("sub"),
+                )
+            }
+        }
+    }
 }

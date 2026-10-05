@@ -10,16 +10,30 @@ import java.io.File
 
 data class RunSummary(val ok: Int, val skipped: Int, val failed: List<String>, val stopped: Boolean)
 
+/** Result of saving one file. */
+private enum class Saved { NEW, ALREADY_THERE, FAILED }
+
 /**
- * Runs one song list, one song at a time, into the chosen folder.
- * YouTube for now; Bandcamp is added in the next stage.
+ * Runs one song list, one song at a time, into one folder.
+ * Bandcamp first (when the source allows it), then YouTube with iTunes album info.
+ *
+ * [log] gets the technical details, [step] what's happening right now, [done] one tidy line
+ * per finished song, [status] the progress numbers.
  */
 class Downloader(
     private val context: Context,
     private val folder: DocumentFile,
     private val log: (String) -> Unit,
     private val status: (index: Int, total: Int, song: String, percent: Float?) -> Unit,
+    private val bandcamp: Bandcamp? = null,
+    /** Test switch: act as if Bandcamp blocked every request (to check the YouTube fallback). */
+    private val pretendBlocked: Boolean = false,
+    private val step: (String) -> Unit = {},
+    private val done: (SongLine) -> Unit = {},
 ) {
+    private var blocksInARow = 0
+    private var bandcampOff = false
+    @Volatile private var libraryNoted = false
     @Volatile private var stopped = false
     @Volatile private var paused = false
     @Volatile private var currentId: String? = null
@@ -42,59 +56,142 @@ class Downloader(
 
     val isPaused: Boolean get() = paused
 
+    /** Carry Bandcamp's "keeps blocking" state over from the previous list in a queue. */
+    fun inheritBandcampState(from: Downloader?) {
+        if (from == null) return
+        blocksInARow = from.blocksInARow
+        bandcampOff = from.bandcampOff
+        libraryNoted = from.libraryNoted   // the music-library note shows once per run, not once per list
+    }
+
     private suspend fun waitWhilePaused() {
         while (paused && !stopped) delay(300)
+    }
+
+    private fun stepLog(text: String) {
+        step(text)
+        log("  $text")
     }
 
     suspend fun run(songs: List<String>, source: Source): RunSummary {
         var ok = 0
         var skipped = 0
         val failed = mutableListOf<String>()
-        // Files already in the folder (name → size), so finished songs are skipped.
-        val existing = withContext(Dispatchers.IO) {
-            folder.listFiles().mapNotNull { f -> f.name?.lowercase()?.let { it to f } }.toMap().toMutableMap()
+        val index = FolderIndex(context, folder, log)
+        withContext(Dispatchers.IO) { index.mp3Count() }?.let {
+            log("Save folder has $it MP3 file" + (if (it == 1) "" else "s") + " – songs already there are skipped")
         }
         val savedNow = mutableSetOf<String>()   // saved during this run (e.g. a song listed twice)
         val work = File(context.cacheDir, "work").apply { mkdirs() }
+
+        fun fail(song: String, why: String) {
+            failed += song
+            done(SongLine(song, Mark.FAILED, why))
+        }
 
         songLoop@ for ((i, song) in songs.withIndex()) {
             waitWhilePaused()
             if (stopped) break
             val name = SongList.safeFileName(song) + ".mp3"
             status(i + 1, songs.size, song, null)
+            step("Checking the folder…")
             log("[${i + 1}/${songs.size}] $song")
 
+            // Already there? (checked by exact file name before downloading anything)
             if (name.lowercase() in savedNow) {
-                log("  SKIP (already in folder)")
+                log("  SKIP (listed twice)")
                 skipped++
+                done(SongLine(song, Mark.SKIPPED, "listed twice"))
                 continue
             }
-            val old = existing[name.lowercase()]
-            if (old != null && old.isFile()) {
-                val size = withContext(Dispatchers.IO) { old.length() }
+            val size = withContext(Dispatchers.IO) { index.sizeOf(name) }
+            if (size != null) {
                 if (size >= MIN_MP3_BYTES) {
                     log("  SKIP (already in folder)")
                     skipped++
+                    done(SongLine(song, Mark.SKIPPED, "already in folder"))
                     continue
                 }
-                // An empty / cut-off file from an interrupted run: replace it.
                 log("  Found an incomplete copy – downloading again")
-                withContext(Dispatchers.IO) { runCatching { old.delete() } }
-                existing.remove(name.lowercase())
+                withContext(Dispatchers.IO) { runCatching { folder.findFile(name)?.delete() } }
             }
-            if (source == Source.BANDCAMP) {
-                log("  Bandcamp downloads arrive in the next stage – skipped for now")
-                failed += song
-                continue
-            }
-
             val ctl = RunControl(
                 log = log,
                 onStart = { currentId = it },
                 onProgress = { p -> status(i + 1, songs.size, song, p) },
                 isStopped = { stopped || paused },
             )
-            // Album details + real cover from iTunes (also tells us the true length for matching).
+
+            // ── 1. Bandcamp first (unless YouTube only, or Bandcamp kept blocking this run) ──
+            var bcTrack: BcTrack? = null
+            var bcMp3: File? = null
+            var bandcampNote = ""
+            if (source != Source.YOUTUBE && bandcamp != null && !bandcampOff) {
+                stepLog("Searching Bandcamp…")
+                val r = if (pretendBlocked) BcResult.Blocked("test switch is on") else bandcamp.find(song, log)
+                if (stopped) break
+                when (r) {
+                    is BcResult.Found -> {
+                        blocksInARow = 0
+                        log("  Bandcamp: ${r.track.pageUrl}")
+                        step("Downloading from Bandcamp…")
+                        val dest = File(work, "bandcamp.mp3")
+                        while (true) {
+                            waitWhilePaused()
+                            if (stopped) break@songLoop
+                            val okDl = bandcamp.download(r.track, dest, { stopped || paused }) { p -> status(i + 1, songs.size, song, p) }
+                            if (stopped) break@songLoop
+                            if (paused) { log("  Paused – this song will start again when you resume"); continue }
+                            if (okDl) { bcTrack = r.track; bcMp3 = dest } else {
+                                log("  Bandcamp download failed")
+                                bandcampNote = "Bandcamp download failed"
+                            }
+                            break
+                        }
+                    }
+                    is BcResult.NotFound -> {
+                        blocksInARow = 0
+                        log("  Not on Bandcamp")
+                        bandcampNote = "not on Bandcamp"
+                    }
+                    is BcResult.Blocked -> {
+                        blocksInARow++
+                        log("  Bandcamp blocked this connection (bot check: ${r.why})")
+                        bandcampNote = "Bandcamp blocked"
+                        if (blocksInARow >= 3) {
+                            bandcampOff = true
+                            log("  Bandcamp keeps blocking – skipping Bandcamp for the rest of this run")
+                            Runner.log("Bandcamp keeps blocking this connection – using YouTube for the rest of this run")
+                        }
+                    }
+                }
+            } else if (source != Source.YOUTUBE && bandcampOff) {
+                bandcampNote = "Bandcamp blocked"
+            }
+            if (bcTrack != null && bcMp3 != null) {
+                step("Saving…")
+                when (withContext(Dispatchers.IO) { saveBandcamp(bcMp3, bcTrack, song, name, work) }) {
+                    Saved.NEW -> {
+                        savedNow += name.lowercase(); ok++
+                        log("  OK (Bandcamp) → $name")
+                        val album = bcTrack.album.ifEmpty { bcTrack.title }
+                        done(SongLine(song, Mark.OK, "Bandcamp · $album" + (if (bcTrack.year.isNotEmpty()) " (${bcTrack.year})" else "")))
+                    }
+                    Saved.ALREADY_THERE -> { savedNow += name.lowercase(); skipped++; done(SongLine(song, Mark.SKIPPED, "already in folder")) }
+                    Saved.FAILED -> fail(song, "couldn't save the file")
+                }
+                work.listFiles()?.forEach { it.deleteRecursively() }
+                continue
+            }
+            if (source == Source.BANDCAMP) {
+                log("  Skipped (Bandcamp only)")
+                fail(song, bandcampNote.ifEmpty { "not on Bandcamp" })
+                continue
+            }
+            if (source == Source.BOTH && bandcamp != null) log("  Using YouTube instead")
+
+            // ── 2. YouTube, with album details + real cover from iTunes ──
+            step("Looking up album info…")
             val album = withContext(Dispatchers.IO) { Itunes.lookup(song) }
             if (album != null) {
                 val bits = listOfNotNull(album.year.ifEmpty { null }, album.track.takeIf { it > 0 }?.let { "track $it" })
@@ -108,6 +205,7 @@ class Downloader(
             while (true) {
                 waitWhilePaused()
                 if (stopped) break@songLoop
+                step("Searching YouTube…")
                 got = YouTube.fetch(song, work, ctl, album?.seconds ?: 0)
                 if (stopped) break@songLoop
                 if (paused) {
@@ -118,17 +216,21 @@ class Downloader(
                 break
             }
             if (got == null) {
-                failed += song
+                fail(song, "not found on YouTube" + if (bandcampNote.isNotEmpty() && source == Source.BOTH) " ($bandcampNote)" else "")
                 continue
             }
 
-            val saved = withContext(Dispatchers.IO) { save(got, song, name, album, work) }
-            if (saved) {
-                savedNow += name.lowercase()
-                ok++
-                log("  OK → $name")
-            } else {
-                failed += song
+            step("Saving…")
+            when (withContext(Dispatchers.IO) { save(got, song, name, album, work) }) {
+                Saved.NEW -> {
+                    savedNow += name.lowercase(); ok++
+                    log("  OK → $name")
+                    val tagAlbum = album?.album?.takeIf { it.isNotEmpty() } ?: got.info?.optString("album")?.takeIf { it.isNotEmpty() }
+                    done(SongLine(song, Mark.OK, "YouTube" + (tagAlbum?.let { " · $it" } ?: "") +
+                        if (bandcampNote.isNotEmpty() && source == Source.BOTH) " ($bandcampNote)" else ""))
+                }
+                Saved.ALREADY_THERE -> { savedNow += name.lowercase(); skipped++; done(SongLine(song, Mark.SKIPPED, "already in folder")) }
+                Saved.FAILED -> fail(song, "couldn't save the file")
             }
             work.listFiles()?.forEach { it.deleteRecursively() }
         }
@@ -136,29 +238,63 @@ class Downloader(
         return RunSummary(ok, skipped, failed, stopped)
     }
 
-    /** Tag the MP3 and copy it into the user's folder. */
-    private fun save(got: Fetched, song: String, name: String, album: AlbumInfo?, work: File): Boolean {
+    /** Tag a Bandcamp MP3 (Bandcamp's own album info and cover) and copy it into the folder. */
+    private fun saveBandcamp(mp3: File, t: BcTrack, song: String, name: String, work: File): Saved {
+        val (listArtist, title) = SongList.split(song)
+        val artist = tidyArtists(listArtist.ifEmpty { t.artist })
+        val album = t.album.ifEmpty { t.title }            // a single is its own album
+        val tags = Tags(
+            title = title, artist = artist, albumArtist = artist, album = album, year = t.year,
+            track = if (t.trackNumber > 0) "${t.trackNumber}" else "1",
+        )
+        val cover = t.coverUrl.takeIf { it.isNotEmpty() }?.let { Cover.fromUrl(it, File(work, "cover.download")) }
+        return write(mp3, tags, cover, name)
+    }
+
+    /** Tag a YouTube MP3 and copy it into the user's folder. */
+    private fun save(got: Fetched, song: String, name: String, album: AlbumInfo?, work: File): Saved {
         val tags = tagsFor(song, got.info, album)
         // Real album cover first; the video thumbnail only if there is none.
         val cover = album?.coverUrl?.takeIf { it.isNotEmpty() }?.let { Cover.fromUrl(it, File(work, "cover.download")) }
             ?: got.thumbnail?.let { Cover.squareJpeg(it) }
+        return write(got.mp3, tags, cover, name)
+    }
+
+    private fun write(mp3: File, tags: Tags, cover: ByteArray?, name: String): Saved {
+        // Last check right before saving: never make a second copy ("name (1).mp3").
+        folder.findFile(name)?.let { there ->
+            if (there.isFile() && there.length() >= MIN_MP3_BYTES) {
+                log("  Already in folder – kept the existing copy")
+                return Saved.ALREADY_THERE
+            }
+            runCatching { there.delete() }      // an empty / cut-off leftover
+        }
         val doc = folder.createFile("audio/mpeg", name) ?: run {
             log("  Couldn't create $name in the folder")
-            return false
+            return Saved.FAILED
+        }
+        if (doc.name != null && !doc.name.equals(name, ignoreCase = true)) {
+            // Android renamed it because the name was taken after all: don't leave a duplicate.
+            runCatching { doc.delete() }
+            log("  Already in folder – kept the existing copy")
+            return Saved.ALREADY_THERE
         }
         return try {
             context.contentResolver.openOutputStream(doc.uri)!!.use { out ->
-                Id3.writeTagged(got.mp3, tags, cover, out)
+                Id3.writeTagged(mp3, tags, cover, out)
             }
             if (cover == null) log("  Note: no cover art could be found for this track.")
             MediaLibrary.announce(context, folder.uri, name) { listed ->
-                if (!listed) log("  Note: Android's music library didn't list $name – music apps that scan folders (like VLC) will still find it.")
+                if (!listed && !libraryNoted) {
+                    libraryNoted = true
+                    log("(Note: Android's music library is slow to list new songs in this folder. Music apps that scan folders, like VLC, find them straight away; others after their next rescan.)")
+                }
             }
-            true
+            Saved.NEW
         } catch (e: Exception) {
             log("  Couldn't save $name: ${e.message}")
             runCatching { doc.delete() }
-            false
+            Saved.FAILED
         }
     }
 

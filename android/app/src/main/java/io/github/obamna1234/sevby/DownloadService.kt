@@ -30,6 +30,7 @@ class DownloadService : Service() {
     private var lastNotify = 0L
     private var lastIndex = -1
     @Volatile private var done = false
+    private var web: BandcampWeb? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -41,9 +42,9 @@ class DownloadService : Service() {
         }
         val job = Runner.takePending()
         createChannels()
-        goForeground(progressNotification(0, job?.songs?.size ?: 0, "Starting…", null))
+        goForeground(progressNotification(0, job?.items?.firstOrNull()?.songs?.size ?: 0, "Starting…", null))
         if (job == null) {
-            Runner.finished()
+            Runner.finished("")
             stopSelfCleanly()
             return START_NOT_STICKY
         }
@@ -54,45 +55,107 @@ class DownloadService : Service() {
 
     private suspend fun run(job: Job) {
         var summary = "Stopped"
+        var wasStopped = true
+        val prefs = Prefs(this)
         try {
             Engine.init(this)
-            val folder = DocumentFile.fromTreeUri(this, Uri.parse(job.folderUri))
-            if (folder == null || !folder.canWrite()) {
+            val root = DocumentFile.fromTreeUri(this, Uri.parse(job.folderUri))
+            if (root == null || !root.canWrite()) {
                 Runner.log("SEVBY can no longer write to the save folder. Choose it again and press Start.")
+                Runner.song(SongLine("Can't write to the save folder – choose it again", Mark.FAILED))
                 summary = "Couldn't write to the save folder"
                 return
             }
-            val d = Downloader(this, folder, log = { Runner.log(it) }) { i, n, song, pct ->
-                Runner.progress(i, n, song, pct)
-                updateProgress(i, n, song, pct)
-            }
-            Runner.downloader = d
+            web = BandcampWeb(this)
+            val bandcamp = Bandcamp(web!!)
             Runner.onChange = { refreshNotification() }
-            val r = d.run(job.songs, job.source)
-            Runner.log("────────────────────────")
-            Runner.log(
-                (if (r.stopped) "Stopped. " else "Done. ") +
-                    "${r.ok} downloaded, ${r.skipped} already there, ${r.failed.size} failed."
-            )
-            if (r.failed.isNotEmpty()) {
-                Runner.log("Failed:")
-                r.failed.forEach { Runner.log("  ✗ $it") }
+
+            var ok = 0
+            var skipped = 0
+            val failed = mutableListOf<QueueItem>()
+            var previous: Downloader? = null
+            var stopped = false
+
+            for ((k, item) in job.items.withIndex()) {
+                if (Runner.stopRequested) { stopped = true; break }
+                // A queued list removed while an earlier one was downloading: skip it.
+                if (job.fromQueue && k > 0 && prefs.queue.none { it.name == item.name && it.songs == item.songs }) {
+                    Runner.log("Skipped \"${item.name}\" (removed from the queue)")
+                    continue
+                }
+                Runner.item(k + 1, job.items.size, item.name, item.songs.size)
+                val folder = if (item.subfolder == null) root else subfolder(root, item.subfolder)
+                if (folder == null) {
+                    Runner.log("Couldn't create the folder \"${item.subfolder}\" – skipping this list")
+                    Runner.song(SongLine("${item.name}: couldn't create its folder", Mark.FAILED))
+                    failed += item
+                    continue
+                }
+                if (job.items.size > 1 || item.subfolder != null) {
+                    Runner.log("════ List ${k + 1}/${job.items.size}: ${item.name} (${item.songs.size} songs) → ${folder.name}")
+                    Runner.song(SongLine("${item.name} · ${item.songs.size} songs → ${folder.name}", Mark.HEADER))
+                }
+                val d = Downloader(
+                    this, folder,
+                    log = { Runner.log(it) },
+                    status = { i, n, song, pct ->
+                        Runner.progress(i, n, song, pct)
+                        updateProgress(i, n, song, pct)
+                    },
+                    bandcamp = bandcamp,
+                    pretendBlocked = prefs.pretendBandcampBlocked,
+                    step = { Runner.step(it) },
+                    done = { Runner.song(it) },
+                )
+                d.inheritBandcampState(previous)
+                previous = d
+                Runner.downloader = d
+                val r = d.run(item.songs, job.source)
+                ok += r.ok
+                skipped += r.skipped
+                if (r.failed.isNotEmpty()) failed += QueueItem(item.name, r.failed, item.subfolder)
+                if (r.stopped) {
+                    stopped = true
+                    break
+                }
+                // This list is finished: take it off the saved queue.
+                prefs.queue = prefs.queue.let { q ->
+                    val at = q.indexOfFirst { it.name == item.name && it.songs == item.songs }
+                    if (at >= 0) q.toMutableList().apply { removeAt(at) } else q
+                }
             }
-            summary = (if (r.stopped) "Stopped · " else "") +
-                "${r.ok} downloaded" +
-                (if (r.skipped > 0) ", ${r.skipped} already there" else "") +
-                (if (r.failed.isNotEmpty()) ", ${r.failed.size} failed" else "")
+
+            // Remember what failed, for "Retry failed" (a stopped run keeps the old list).
+            if (!stopped) prefs.failed = failed
+            val nFailed = failed.sumOf { it.songs.size }
+            wasStopped = stopped
+            summary = (if (stopped) "Stopped · " else "Done · ") +
+                "$ok downloaded" +
+                (if (skipped > 0) " · $skipped already there" else "") +
+                (if (nFailed > 0) " · $nFailed failed" else "")
+            Runner.log("────────────────────────")
+            Runner.log(summary)
+            failed.forEach { f -> f.songs.forEach { Runner.log("  ✗ $it" + (f.subfolder?.let { s -> "  (in $s)" } ?: "")) } }
         } catch (e: Exception) {
             Runner.log("Something went wrong: ${e.message}")
             summary = "Stopped after an error"
         } finally {
             done = true
+            web?.close()
+            web = null
             Runner.onChange = null
             Runner.downloader = null
-            Runner.finished()
-            showDone(summary)
+            Runner.finished(summary)
+            showDone(summary, silent = wasStopped)
             stopSelfCleanly()
         }
+    }
+
+    /** The sub-folder [name] inside [root], created if needed. */
+    private fun subfolder(root: DocumentFile, name: String): DocumentFile? {
+        val safe = SongList.safeFileName(name).trim('.', ' ').ifEmpty { "Song list" }
+        root.findFile(safe)?.let { if (it.isDirectory()) return it }
+        return root.createDirectory(safe)
     }
 
     // ── Notifications ───────────────────────────────────────────────────
@@ -131,7 +194,9 @@ class DownloadService : Service() {
 
     private fun progressNotification(index: Int, total: Int, song: String, pct: Float?): Notification {
         val paused = Runner.state.value.paused
-        val count = if (total > 0 && index > 0) "$index / $total" else ""
+        val st = Runner.state.value
+        val list = if (st.itemCount > 1) "List ${st.itemIndex}/${st.itemCount} · " else ""
+        val count = if (total > 0 && index > 0) "$list$index / $total" else ""
         val b = builder(CH_PROGRESS)
             .setSmallIcon(if (paused) android.R.drawable.ic_media_pause else android.R.drawable.stat_sys_download)
             .setContentTitle(if (paused) "Paused $count".trim() else if (count.isNotEmpty()) "Downloading $count" else "SEVBY")
@@ -176,10 +241,11 @@ class DownloadService : Service() {
             .notify(ID_PROGRESS, progressNotification(index, total, song, pct))
     }
 
-    private fun showDone(summary: String) {
-        val n = builder(CH_DONE)
+    /** Finished runs make the notification sound; stopped ones (or errors) appear silently. */
+    private fun showDone(summary: String, silent: Boolean) {
+        val n = builder(if (silent) CH_PROGRESS else CH_DONE)
             .setSmallIcon(android.R.drawable.stat_sys_download_done)
-            .setContentTitle("SEVBY finished")
+            .setContentTitle(if (silent) "SEVBY stopped" else "SEVBY finished")
             .setContentText(summary)
             .setAutoCancel(true)
             .setContentIntent(openAppIntent())

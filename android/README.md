@@ -1,7 +1,7 @@
 # SEVBY for Android
 
 A native Android version of SEVBY, built on [youtubedl-android](https://github.com/yausername/youtubedl-android)
-(which bundles yt-dlp, Python and FFmpeg). Work in progress, built in stages.
+(which bundles yt-dlp, Python and FFmpeg). Beta.
 
 ## Run it from Android Studio
 
@@ -20,13 +20,40 @@ Open the run under **Actions** and download the `SEVBY-android-…` artifact (a 
 | `…-armeabi-v7a.apk` | older 32-bit phones |
 | `…-universal.apk` | any device, if unsure (largest) |
 
-Pushing a tag like `v2.0.0` also attaches the APKs to that GitHub release.
-A manual run with **publish** ticked adds them to the newest release.
+## Making a release
+
+Android releases have their own tags, **`android-v…`** (e.g. `android-v0.1.0-beta`), so they never clash with the
+desktop releases (`v…`). The version shown in the app comes from the tag.
+
+1. Make sure the signing-key secrets below are set (release builds stop with an error without them).
+2. Edit `android/RELEASE_NOTES.md` if needed and commit it.
+3. On GitHub: **Releases → Draft a new release → Choose a tag →** type `android-v0.1.0-beta` and pick
+   **Create new tag on publish** (target `main`). Title: `SEVBY for Android 0.1.0-beta`. Paste
+   `android/RELEASE_NOTES.md` into the description. Tick **Set as a pre-release**, untick **Set as the latest
+   release**, then **Publish release**.
+4. Publishing creates the tag, which starts the **Build Android APK** workflow. After ~10 minutes the signed APKs
+   appear on the release.
+
+A manual run with **publish** ticked re-uploads the APKs to the newest `android-v…` release.
+The desktop workflow's monthly rebuild skips `android-v…` releases.
 
 ## Signing key (do this once, so updates install over the old app)
 
 Without a key, the workflow signs with a throwaway key and every new build has to be
 installed after uninstalling the previous one. To fix that:
+
+**Windows (PowerShell)**, using the Java that comes with Android Studio:
+
+```powershell
+cd $HOME\Documents
+& "C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" -genkeypair -v -keystore sevby.jks -alias sevby -keyalg RSA -keysize 4096 -validity 10000
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("$PWD\sevby.jks")) | Set-Content -NoNewline sevby.jks.b64
+```
+
+It asks for a password (type it twice; nothing shows while typing) and a few name questions (any answers, or
+Enter to skip; type `yes` at the end).
+
+**Linux / macOS:**
 
 ```bash
 keytool -genkeypair -v -keystore sevby.jks -alias sevby -keyalg RSA -keysize 4096 -validity 10000
@@ -38,7 +65,7 @@ In the repo: **Settings → Secrets and variables → Actions → New repository
 - `SEVBY_KEYSTORE_BASE64` – the contents of `sevby.jks.b64`
 - `SEVBY_KEYSTORE_PASSWORD` – the keystore password you chose
 - `SEVBY_KEY_ALIAS` – `sevby`
-- `SEVBY_KEY_PASSWORD` – the key password (same as the keystore password if you pressed Enter)
+- `SEVBY_KEY_PASSWORD` – the same password again (newer keytool uses one password for both)
 
 Keep `sevby.jks` and its password somewhere safe and **never commit it** (it's in `.gitignore`).
 If you lose it, users have to uninstall before installing future versions.

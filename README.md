@@ -1,4 +1,4 @@
-***Beta: Linux/Mac builds untested. The Android version is command-line only and lightly tested.***
+***Beta: Linux/Mac builds untested. The Android app is new (beta).***
 
 # SEVBY: Playlist to MP3
 
@@ -38,7 +38,21 @@ python sevby_app.py
 
 From source you also need **ffmpeg** (put `ffmpeg.exe` / `ffmpeg` next to `sevby_app.py`, or install it so it's on your PATH).
 
-**Android:** there is a command-line version for Termux (no window). See [TERMUX.md](TERMUX.md). It is a beta.
+## Android
+
+**SEVBY for Android** is a proper app (no Termux needed). Get the APK from the **Releases** page: look for the newest
+release named *SEVBY for Android* (tag `android-v…`) and download `SEVBY-…-arm64-v8a.apk` (or `…-universal.apk` if
+unsure). Open it on your phone and allow installing apps from your browser or Files app when asked. Android 7.0+.
+
+- Paste or load a `.txt` song list (`Artist - Title` lines), pick a folder, press **Start**
+- Bandcamp first, YouTube for the rest, with album details from Bandcamp or Apple's iTunes Search
+- Queue, Pause / Resume / Stop (also from the notification), *Retry failed*, skips songs already in the folder
+- Keeps running in the background; update the downloader from **About & updates** when YouTube changes
+- Spotify playlists: no Spotify login on Android yet. Tap **Open Chosic** under the song box, paste the playlist link into [Chosic](https://www.chosic.com/spotify-playlist-exporter/), then paste or load the song list in SEVBY
+
+The APK bundles youtubedl-android (GPL v3), so the APK as a whole is distributed under the GPL v3; see
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Developer notes: [android/README.md](android/README.md).
+There is also the older command-line version for Termux: [TERMUX.md](TERMUX.md).
 
 ## Using a Spotify playlist (one-time setup)
 
@@ -101,6 +115,8 @@ SEVBY is a small interface that glues together some excellent open-source projec
 - **[customtkinter](https://github.com/TomSchimansky/CustomTkinter)** by Tom Schimansky - the user interface (MIT)
 - **[tkinterdnd2](https://github.com/Eliav2/tkinterdnd2)** - drag and drop (MIT)
 - **[PyInstaller](https://pyinstaller.org)** - packages the app (GPL-2.0 with bootloader exception)
+- **[youtubedl-android](https://github.com/JunkFood02/youtubedl-android)** - runs yt-dlp, Python and FFmpeg inside the Android app (GPL v3)
+- **[Apple iTunes Search API](https://performance-partners.apple.com/search-api)** - album details and covers in the Android app
 - **[Spotify Web API](https://developer.spotify.com/documentation/web-api)** - only used to read playlist track names and details (no audio comes from Spotify)
 - **[Bandcamp](https://bandcamp.com)** - please support artists by buying their music there when you can
 - The "Artist - Title" list idea owes a nod to **[Chosic's playlist exporter](https://www.chosic.com/spotify-playlist-exporter/)**, which SEVBY links to as an optional alternative
@@ -124,6 +140,6 @@ Scan of the v0.9.1-beta Windows file on 2026-10-05: 4 of 69 engines flag it (Mic
 
 ## Disclaimer
 
-SEVBY is a tool for personal use. Only download music you have the right to download, such as music you own, that is free to download, or that the artist allows. Downloading copyrighted material without permission may be illegal where you live, and may break the terms of service of YouTube, Bandcamp or Spotify. You are responsible for how you use it. SEVBY is not affiliated with or endorsed by Spotify, Bandcamp, YouTube or Google. The software is provided "as is", without warranty (see [LICENSE](LICENSE)).
+SEVBY is a tool for personal use. Only download music you have the right to download, such as music you own, that is free to download, or that the artist allows. Downloading copyrighted material without permission may be illegal where you live, and may break the terms of service of YouTube, Bandcamp or Spotify. You are responsible for how you use it. SEVBY is not affiliated with or endorsed by Spotify, Bandcamp, YouTube, Google or Apple. The software is provided "as is", without warranty (see [LICENSE](LICENSE)).
 
 Third-party components are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
