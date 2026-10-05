@@ -75,7 +75,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
-          tag=$(gh release list --limit 1 --json tagName --jq '.[0].tagName')
+          # Newest desktop release (Android releases are tagged android-v… and are skipped)
+          tag=$(gh release list --limit 30 --json tagName --jq '[.[] | select(.tagName | startswith("android-") | not)][0].tagName // empty')
           if [ -z "$tag" ]; then echo "No release found - nothing to update"; exit 1; fi
           echo "Updating release $tag"
           gh release upload "$tag" SEVBY-Windows.zip SEVBY-Linux.zip SEVBY-macOS.zip --clobber
