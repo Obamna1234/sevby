@@ -83,7 +83,7 @@ The `dist/` folder then contains `SEVBY` (or `SEVBY.exe`). The GitHub Actions wo
 
 ## Troubleshooting
 
-- **Downloads suddenly stop working (especially from YouTube)** - the sites change often, and the downloader inside SEVBY (yt-dlp) needs updating. Go to the **Releases** page, download the newest version for your system, and use it in place of the old one. No terminal needed. If there is no newer version yet, please open an Issue. SEVBY is a hobby project maintained when time allows. Termux and source users can instead run `pip install -U yt-dlp`.
+- **Downloads suddenly stop working (especially from YouTube)** - the sites change often, and the downloader inside SEVBY (yt-dlp) needs updating. The files on the **Releases** page are rebuilt automatically every month with the newest yt-dlp, so download the newest zip for your system and use it in place of the old one. No terminal needed. If it still doesn't work after a fresh download, please open an Issue. This is a hobby project maintained when time allows, so fixes are not guaranteed. Termux and source users can instead run `pip install -U yt-dlp`.
 - **"Bandcamp blocked / Client Challenge"** - Bandcamp sometimes shows a bot check. SEVBY then tries each artist's own Bandcamp page and uses YouTube for the rest.
 - **YouTube 403 errors** - update yt-dlp (see above).
 - **A copy of each run's log** is saved to `~/.sevby_log.txt` - attach it to bug reports.
