@@ -23,7 +23,7 @@ From a text file of `Artist - Title` lines:
 ```
 python sevby_cli.py songs.txt -o ~/storage/music
 ```
-From a Spotify playlist (needs your free Client ID, see the main README):
+From a Spotify playlist (needs a Spotify Client ID, which requires Spotify Premium to create; see the main README. Without Premium, use a .txt list instead):
 ```
 python sevby_cli.py "https://open.spotify.com/playlist/XXXX" --client-id YOUR_CLIENT_ID -o ~/storage/music
 ```
