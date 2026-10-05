@@ -11,7 +11,7 @@ The Google Play version is outdated and will not work.
 ```
 pkg update
 pkg install python ffmpeg git
-pip install -U yt-dlp
+pip install -U yt-dlp curl_cffi
 termux-setup-storage
 git clone https://github.com/Obamna1234/sevby
 cd sevby
@@ -43,6 +43,7 @@ Stop at any time with **Ctrl+C** (on the Termux keyboard row: CTRL then C). Fini
 
 ## Tips
 - Keep the phone awake during long runs: run `termux-wake-lock` first, and in Android settings set Termux battery usage to "Unrestricted".
+- `curl_cffi` (installed in the setup step above) lets Bandcamp downloads work on Android. Without it, SEVBY still works but uses YouTube for every song.
 - Update yt-dlp now and then: `pip install -U yt-dlp`. If downloads fail with errors like 403, this is the first thing to try.
 - Update SEVBY: `cd ~/sevby && git pull`.
 - Your files are in the `Music` folder on the phone, in your music app after a minute or two.
