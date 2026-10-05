@@ -1,0 +1,91 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: ["**"]
+    paths: ["android/**", ".github/workflows/android.yml"]
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Also upload the APKs to the newest release"
+        type: boolean
+        default: false
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: android
+    env:
+      KEYSTORE_BASE64: ${{ secrets.SEVBY_KEYSTORE_BASE64 }}
+      SEVBY_KEYSTORE_PASSWORD: ${{ secrets.SEVBY_KEYSTORE_PASSWORD }}
+      SEVBY_KEY_ALIAS: ${{ secrets.SEVBY_KEY_ALIAS }}
+      SEVBY_KEY_PASSWORD: ${{ secrets.SEVBY_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "SEVBY_VERSION_NAME=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          else
+            echo "SEVBY_VERSION_NAME=0.1.0-dev.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+          fi
+          echo "SEVBY_VERSION_CODE=${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+
+      - name: Signing key (from repo secrets, if set)
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/sevby.jks"
+            echo "SEVBY_KEYSTORE=$RUNNER_TEMP/sevby.jks" >> "$GITHUB_ENV"
+            echo "Signing with the SEVBY release key"
+          else
+            echo "::warning::No SEVBY_KEYSTORE_BASE64 secret - APKs are signed with a throwaway debug key. Each new build must be installed after uninstalling the old one. See android/README.md."
+          fi
+
+      - name: Build
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleRelease
+
+      - name: Name the APKs
+        run: |
+          mkdir -p ../out
+          for f in app/build/outputs/apk/release/*.apk; do
+            abi=$(basename "$f" | sed -E 's/^app-(.*)-release(-unsigned)?\.apk$/\1/')
+            cp "$f" "../out/SEVBY-${SEVBY_VERSION_NAME}-${abi}.apk"
+          done
+          ls -l ../out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SEVBY-android-${{ env.SEVBY_VERSION_NAME }}
+          path: out/*.apk
+
+      - name: Upload to release
+        if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.publish)
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            tag="$GITHUB_REF_NAME"
+            gh release view "$tag" >/dev/null 2>&1 || gh release create "$tag" --title "$tag" --notes "SEVBY $tag"
+          else
+            tag=$(gh release list --limit 1 --json tagName --jq '.[0].tagName')
+            if [ -z "$tag" ]; then echo "No release found"; exit 1; fi
+          fi
+          echo "Uploading to $tag"
+          gh release upload "$tag" out/*.apk --clobber
