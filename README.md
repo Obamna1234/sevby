@@ -111,8 +111,10 @@ Antivirus note: SEVBY is unsigned and built with PyInstaller, so some antivirus 
 <img width="2475" height="1223" alt="image" src="https://github.com/user-attachments/assets/7602f689-6537-4b33-a1dc-c0a382ddda59" />
 Scan of the original v0.9.0-beta Windows file on 2026-10-04: 3 of 69 engines flagged it (Bkav, McAfee and Zillya). That file has since been replaced by the current release, which is scanned below.
 
+
 <img width="2529" height="1209" alt="image" src="https://github.com/user-attachments/assets/08b75d06-7340-4f64-9905-e04055f14b2a" />
 Scan of the v0.9.1-beta Windows file on 2026-10-05: 4 of 69 engines flag it (Microsoft Trojan:Win32/Wacatac.C!ml, McAfee, Zillya and Bkav). These are generic detections that commonly hit unsigned PyInstaller apps, and I believe they are false positives. I have submitted the file to the vendors for review. The full source code is in this repo and the release files are built by the GitHub Actions workflow, so you can check them yourself or run SEVBY from source instead. Full scan: <[paste your VirusTotal link here](https://www.virustotal.com/gui/file/a30f7170a89658d3fb41d5dd2c4f134d4bf26a7996d0302d3e7d01f3a5a44d89?nocache=1)>
+
 
 <img width="598" height="356" alt="image" src="https://github.com/user-attachments/assets/9f4c0a2a-5d83-49ec-a900-8f471ab27aba" />
 
