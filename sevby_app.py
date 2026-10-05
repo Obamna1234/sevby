@@ -6,7 +6,7 @@ Standalone desktop app (customtkinter).
 
 Paths:
   1) Load a .txt / paste song list  (no Spotify account needed)
-  2) Spotify playlist URL (public OR private) - needs only a free Client ID.
+  2) Spotify playlist URL (public OR private) - needs only a Client ID (Spotify requires Premium to create one).
      First use opens your browser once to log in; after that it is remembered.
 
 Then:
@@ -1712,9 +1712,11 @@ class SevbyApp(_SevbyBase):
         ).pack(anchor="w", pady=(0, 8))
 
         help_text = (
-            "It's a free code from Spotify that lets SEVBY read your\n"
+            "It's a code from Spotify that lets SEVBY read your\n"
             "playlists (public AND private). It is NOT your password.\n"
-            "You do NOT need Spotify Premium.\n\n"
+            "NOTE: Spotify now requires a Premium account to create one\n"
+            "(the Web API option stays greyed out on free accounts).\n"
+            "No Premium? Skip this: use Chosic below and Song list mode.\n\n"
             "How to get it (about 2 minutes, one time only):\n\n"
             "1. Click \u201cOpen Spotify Dashboard\u201d in SEVBY\n"
             "   (or go to developer.spotify.com/dashboard)\n"
@@ -2009,7 +2011,8 @@ class SevbyApp(_SevbyBase):
     def _need_client_id(self):
         """No Client ID yet: send the user to Spotify and explain the next step."""
         self.log(
-            "Spotify needs a free Client ID (one-time setup).\n"
+            "Spotify needs a Client ID (one-time setup; Spotify requires Premium to create one).\n"
+            "No Premium? Use Chosic to export a .txt and choose Song list mode instead.\n"
             "Opening the Spotify Developer dashboard\u2026\n"
             "Log in \u2192 Create app \u2192 Redirect URI  http://127.0.0.1:8888  \u2192 Settings \u2192 copy the Client ID.\n"
             "Then come back and press Start \u2014 SEVBY will paste it from your clipboard."
