@@ -2,6 +2,8 @@
 
 # SEVBY: Playlist to MP3
 
+*Screenshots show the Windows version (last two images: Android). Linux and macOS look similar.*
+
 <p align="center">
 <img width="758" height="929" alt="image" src="https://github.com/user-attachments/assets/0ee62477-1992-410a-b328-431946444709" />
 <br><em>SEVBY v1.0.0 downloading from an imported .txt file playlist</em>
@@ -24,12 +26,12 @@
 
 <p align="center">
 <img width="428" height="888" alt="image" src="https://github.com/user-attachments/assets/7de025c7-fb4a-487f-8cc7-0f3f32df543a" />
-<br><em>SEVBY - Android-v1.0.0-beta downloading from an imported .txt file playlist</em>
+<br><em>SEVBY for Android (beta) downloading from an imported .txt file playlist</em>
 </p>
 
 <p align="center">
 <img width="423" height="887" alt="image" src="https://github.com/user-attachments/assets/54d2af9a-6efa-4b7b-aedb-7584e012b0e2" />
-<br><em>SEVBY - Android-v1.0.0-beta About &amp; Updates window</em>
+<br><em>SEVBY for Android (beta) About &amp; Updates window</em>
 </p>
 
 Turn a Spotify playlist (or a plain text list of songs) into tagged MP3s on your own computer or Android phone.
@@ -41,9 +43,9 @@ SEVBY looks for each song on **Bandcamp** first, and falls back to **YouTube** f
 
 | Where | How |
 |---|---|
-| **Windows** | Download the `.exe` from the **Releases** page and double-click it |
+| **Windows** | Download `SEVBY-Windows.zip` from the **Releases** page, unzip it and run `SEVBY.exe` |
 | **Android** | Download the APK from the **SEVBY for Android** release on the Releases page (marked *Pre-release*; see [Android](#android) below) |
-| **Linux / macOS** | Download the build from the Releases page (beta, untested), or run from source |
+| **Linux / macOS** | Download `SEVBY-Linux.zip` or `SEVBY-macOS.zip` from the Releases page (beta, untested), or run from source |
 | **Any computer** | Run from source with Python (see [Quick start](#quick-start)) |
 
 ## What it does
@@ -64,7 +66,7 @@ SEVBY looks for each song on **Bandcamp** first, and falls back to **YouTube** f
 
 ## Quick start
 
-Download the build for your system from the **Releases** page (Windows `.exe`, Linux and macOS builds from the GitHub Actions workflow), or run from source:
+Download the build for your system from the **Releases** page (`SEVBY-Windows.zip`, `SEVBY-Linux.zip` or `SEVBY-macOS.zip`), unzip it and run SEVBY. **Tested on Windows 10 (64-bit); Linux and macOS builds are untested.** On Linux or macOS you may need to make the file executable first (`chmod +x SEVBY`). Or run from source:
 
 ```bash
 pip install -r requirements.txt
