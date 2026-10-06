@@ -634,10 +634,11 @@ class MainActivity : AppCompatActivity() {
         val total = list.declaredCount
         if (total != null && total > list.songs.size) {
             MaterialAlertDialogBuilder(this)
-                .setTitle("Only part of the playlist")
-                .setMessage("Apple's page listed ${list.songs.size} of the $total songs in \"$name\", so " +
-                    "${total - list.songs.size} are missing. For big playlists, export them to text with another " +
-                    "service, or split them into smaller playlists in Apple Music.")
+                .setTitle("${total - list.songs.size} songs couldn't be loaded")
+                .setMessage("This playlist has $total songs, but Apple Music's public web page only shows the first " +
+                    "${list.songs.size}, so the last ${total - list.songs.size} aren't in the list.\n\n" +
+                    "To get them too, split the playlist into smaller ones (about 100 songs each) in Apple Music, " +
+                    "or export it to a .txt file with another service and load that.")
                 .setPositiveButton("OK", null)
                 .show()
         }
