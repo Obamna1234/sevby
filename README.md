@@ -3,27 +3,27 @@
 # SEVBY: Playlist to MP3
 
 <p align="center">
-<img src="https://github.com/user-attachments/assets/4bd6e3b6-e6ba-4736-b07c-8d90a4f373d9" alt="SEVBY v1.0.0 downloading from an imported .txt file playlist" width="600">
+<img width="758" height="929" alt="image" src="https://github.com/user-attachments/assets/0ee62477-1992-410a-b328-431946444709" />
 <br><em>SEVBY v1.0.0 downloading from an imported .txt file playlist</em>
 </p>
 
 <p align="center">
-<img src="https://github.com/user-attachments/assets/af5f88cd-f03a-4a6d-b6b2-e1a767c043e6" alt="SEVBY v1.0.0 UI for pasting a Spotify URL playlist" width="600">
+<img width="758" height="928" alt="image" src="https://github.com/user-attachments/assets/01e7bd1d-93a9-4622-84be-256c91aa2ace" />
 <br><em>SEVBY v1.0.0 UI for pasting a Spotify URL playlist</em>
 </p>
 
 <p align="center">
-<img src="https://github.com/user-attachments/assets/a4db3cb9-5ebc-48be-9014-c1ca1c3b6189" alt="SEVBY v1.0.0 exporting a Apple Music playlist URL to .txt &amp; automatically pasting into the text box" width="600">
+<img width="758" height="929" alt="image" src="https://github.com/user-attachments/assets/da86e397-df81-40a8-8239-4e16cf9b9769" />
 <br><em>SEVBY v1.0.0 exporting a Apple Music playlist URL to .txt &amp; automatically pasting into the text box</em>
 </p>
 
 <p align="center">
-<img src="https://github.com/user-attachments/assets/715068e5-b6cc-4db2-a141-bbacb2bb9d13" alt="SEVBY About &amp; Updates window" width="600">
+<img width="758" height="929" alt="image" src="https://github.com/user-attachments/assets/6de1cf8c-44be-4b9d-a37d-b9b62fe57d43" />
 <br><em>SEVBY About &amp; Updates window</em>
 </p>
 
 <p align="center">
-<img src="https://github.com/user-attachments/assets/032498bc-6b4f-46b0-a93d-68cecc1948ff" alt="SEVBY v1.0.0 on Android downloading from an imported .txt file playlist" width="419">
+<img width="428" height="888" alt="image" src="https://github.com/user-attachments/assets/7de025c7-fb4a-487f-8cc7-0f3f32df543a" />
 <br><em>SEVBY v1.0.0 on Android downloading from an imported .txt file playlist</em>
 </p>
 
