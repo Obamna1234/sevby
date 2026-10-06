@@ -53,7 +53,7 @@ SEVBY looks for each song on **Bandcamp** first, and falls back to **YouTube** f
 - A tidy, collapsible **song log**: one entry per song with where it came from, plus a *Details* view and *Copy log* for bug reports
 - Songs already in the folder are skipped (even after an interrupted run); a song listed twice is only downloaded once
 - Retries automatically when the internet drops for a moment
-- **About & updates**: shows the yt-dlp version, checks once a day and updates it with one click (restart afterwards), plus diagnostics and a network test
+- **About & updates**: shows the yt-dlp version, checks once a day and updates it with one click (restart afterwards), tells you when a newer SEVBY release is out (once a day, with a Download button), plus diagnostics and a network test
 - Remembers your folder, mode and source
 - Runs locally. No account with SEVBY, nothing is uploaded anywhere
 
