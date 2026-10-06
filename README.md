@@ -24,7 +24,12 @@
 
 <p align="center">
 <img width="428" height="888" alt="image" src="https://github.com/user-attachments/assets/7de025c7-fb4a-487f-8cc7-0f3f32df543a" />
-<br><em>SEVBY v1.0.0 on Android downloading from an imported .txt file playlist</em>
+<br><em>SEVBY - Android v1.0.0 on Android downloading from an imported .txt file playlist</em>
+</p>
+
+<p align="center">
+<img width="423" height="887" alt="image" src="https://github.com/user-attachments/assets/54d2af9a-6efa-4b7b-aedb-7584e012b0e2" />
+<br><em>SEVBY - Android v1.0.0 About &amp; Updates window</em>
 </p>
 
 Turn a Spotify playlist (or a plain text list of songs) into tagged MP3s on your own computer or Android phone.
