@@ -18,6 +18,7 @@ import android.text.style.ForegroundColorSpan
 import android.text.style.RelativeSizeSpan
 import android.text.style.StyleSpan
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -87,6 +88,15 @@ class MainActivity : AppCompatActivity() {
             updateCount()
             // A different list can't be "resumed": the button goes back to Start.
             if (!Runner.state.value.running && prefs.resume.isNotEmpty()) { prefs.resume = emptyList(); refreshQueue() }
+        }
+        // The song box scrolls on its own (like the log box) instead of moving the whole page.
+        b.songs.setOnTouchListener { v, e ->
+            if (v.canScrollVertically(1) || v.canScrollVertically(-1)) {
+                v.parent.requestDisallowInterceptTouchEvent(
+                    e.actionMasked != MotionEvent.ACTION_UP && e.actionMasked != MotionEvent.ACTION_CANCEL
+                )
+            }
+            false
         }
         setLabel(b.loadTxt, "Load .txt", null)
         setLabel(b.chosic, "Open Chosic", "export to .txt")
