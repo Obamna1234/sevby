@@ -216,7 +216,9 @@ class Downloader(
                 break
             }
             if (got == null) {
-                fail(song, "not found on YouTube" + if (bandcampNote.isNotEmpty() && source == Source.BOTH) " ($bandcampNote)" else "")
+                val why = if (YouTube.lastError != null) "YouTube error – update yt-dlp in About & updates"
+                          else "not found on YouTube"
+                fail(song, why + if (bandcampNote.isNotEmpty() && source == Source.BOTH) " ($bandcampNote)" else "")
                 continue
             }
 

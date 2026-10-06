@@ -53,6 +53,27 @@ class DownloadService : Service() {
         return START_NOT_STICKY
     }
 
+    /**
+     * YouTube stops working with old yt-dlp versions, and a fresh install brings the one built into the app.
+     * So before a run that may use YouTube, update yt-dlp if a newer one is out (checked at most once a day).
+     */
+    private suspend fun freshenYtDlp(prefs: Prefs) {
+        val v = Engine.run("--version")
+        if (!v.ok) return
+        val installed = v.out.trim()
+        val now = System.currentTimeMillis()
+        if (prefs.latestYtDlp.isEmpty() || now - prefs.lastUpdateCheck > 24 * 60 * 60 * 1000L) {
+            Engine.latestYtDlp()?.let { prefs.latestYtDlp = it; prefs.lastUpdateCheck = now }
+        }
+        val latest = prefs.latestYtDlp
+        if (latest.isEmpty() || !Engine.isNewer(latest, installed)) return
+        Runner.step("Updating yt-dlp…")
+        Runner.log("yt-dlp $installed is out of date – updating to $latest first (YouTube needs a recent version)…")
+        val msg = Engine.updateYtDlp(this)
+        Runner.log("yt-dlp: $msg")
+        Runner.step("")
+    }
+
     private var stoppedAt = 0
 
     /** The lists from the one that was interrupted onwards (queued ones only if still in the queue). */
@@ -74,6 +95,7 @@ class DownloadService : Service() {
                 summary = "Couldn't write to the save folder"
                 return
             }
+            if (job.source != Source.BANDCAMP) freshenYtDlp(prefs)
             web = BandcampWeb(this)
             val bandcamp = Bandcamp(web!!)
             Runner.onChange = { refreshNotification() }

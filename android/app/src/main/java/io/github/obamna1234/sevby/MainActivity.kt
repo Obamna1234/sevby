@@ -759,6 +759,7 @@ class MainActivity : AppCompatActivity() {
             wasRunning = s.running
             refreshQueue()
             refreshRetry()
+            if (!s.running) refreshEngineStatus()      // a run may have updated yt-dlp
         }
     }
 

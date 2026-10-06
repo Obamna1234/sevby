@@ -33,6 +33,13 @@ object YouTube {
     private val NET_WAITS = listOf(5, 15)
 
     /** Top YouTube results (title, length, channel) without downloading anything. */
+    /**
+     * Why the last [fetch] failed when YouTube itself gave an error (old yt-dlp, bot check, network),
+     * or null when the song simply wasn't found. Lets the song list say which one it was.
+     */
+    @Volatile var lastError: String? = null
+        private set
+
     suspend fun search(song: String, ctl: RunControl): List<YtEntry> {
         repeat(1 + NET_WAITS.size) { attempt ->
             if (ctl.isStopped()) return emptyList()
@@ -41,6 +48,7 @@ object YouTube {
                 onStart = ctl.onStart,
             )
             if (r.ok) {
+                lastError = null
                 val entries = runCatching { JSONObject(r.out).optJSONArray("entries") }.getOrNull()
                     ?: return emptyList()
                 return (0 until entries.length()).mapNotNull { i ->
@@ -57,6 +65,7 @@ object YouTube {
                 }
             }
             if (r.stopped) return emptyList()
+            lastError = r.errorLine
             if (attempt == NET_WAITS.size) return emptyList()
             if (isNetworkError(r.err)) {
                 val wait = NET_WAITS[attempt]
@@ -77,7 +86,9 @@ object YouTube {
      */
     suspend fun fetch(song: String, work: File, ctl: RunControl, targetSeconds: Int = 0): Fetched? {
         ctl.log("  Searching YouTube…")
+        lastError = null
         val ranked = Matching.rank(search(song, ctl), song, targetSeconds)
+        if (ranked.isEmpty() && lastError != null) ctl.log("  YouTube search failed: $lastError")
         if (ctl.isStopped()) return null
 
         val targets = mutableListOf<String>()
@@ -116,14 +127,20 @@ object YouTube {
                 lastErr = "yt-dlp finished but no MP3 was made"
             } else {
                 lastErr = r.errorLine
+                if (!looksLikeNoResult(lastErr)) lastError = lastErr
             }
         }
         ctl.log("  FAIL: $lastErr")
         if (isNetworkError(lastErr)) ctl.log("  Tip: the internet connection dropped. Run the list again later to fetch the missing songs.")
         if ("403" in lastErr || "forbidden" in lastErr.lowercase() || "sign in" in lastErr.lowercase()) {
-            ctl.log("  Tip: YouTube changes often — tap Engine → Update yt-dlp, then retry.")
+            ctl.log("  Tip: YouTube changes often — update yt-dlp in About & updates, then retry.")
         }
         return null
+    }
+
+    private fun looksLikeNoResult(err: String): Boolean {
+        val e = err.lowercase()
+        return "no video" in e || "no results" in e || "no result" == e || "unavailable" in e || "private video" in e
     }
 
     private suspend fun download(target: String, work: File, ctl: RunControl): RunResult {
