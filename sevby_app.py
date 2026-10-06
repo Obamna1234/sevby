@@ -365,7 +365,7 @@ def _bandcamp_request(q: str) -> tuple[list, str | None]:
 
 
 def _norm_text(s: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "", (s or "").lower())
+    return re.sub(r"[^a-z0-9]+", "", (s or "").lower().replace("&", " and "))
 
 
 def _bc_subdomains(artist: str) -> list[str]:
@@ -1524,7 +1524,7 @@ _UNWANTED = (
 
 
 def _words(s: str) -> list[str]:
-    return re.findall(r"\w+", (s or "").lower())
+    return re.findall(r"\w+", (s or "").lower().replace("&", " and "))
 
 
 def score_youtube_result(entry: dict, query: str, meta: dict, index: int = 0) -> float:
