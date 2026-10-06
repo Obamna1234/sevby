@@ -21,7 +21,7 @@
 
 <p align="center">
 <img width="758" height="929" alt="image" src="https://github.com/user-attachments/assets/6de1cf8c-44be-4b9d-a37d-b9b62fe57d43" />
-<br><em>SEVBY About &amp; Updates window</em>
+<br><em>SEVBY v1.0.0 About &amp; Updates window</em>
 </p>
 
 <p align="center">
