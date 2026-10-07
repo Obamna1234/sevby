@@ -49,6 +49,69 @@ class MatchingRulesTest {
         assertFalse(BandcampData.bandMatches("Taylor Swift", "ulker"))
     }
 
+    // ── Bandcamp: artist-page rule (own page first, other accounts only with the iTunes album) ──
+
+    private fun page(name: String, band: String, url: String, album: String) = BcHit(name, band, url, album)
+
+    @Test fun otherAccountsCreditingTheArtistAreRejected() {
+        val cases = listOf(
+            Triple("AC/DC - Highway to Hell",
+                page("Highway to Hell", "AC/DC", "https://cherrybox.bandcamp.com/track/highway-to-hell", "Full Black (Chronicles of the Abyss) Vol. 3"),
+                "Highway to Hell"),
+            Triple("Taylor Swift - Anti-Hero",
+                page("Anti-Hero", "Taylor Swift", "https://ulker.bandcamp.com/track/anti-hero", "pop music / HOT TOP 2023"),
+                "Midnights"),
+            Triple("Queen - Bohemian Rhapsody",
+                page("Bohemian Rhapsody", "Queen", "https://djrocco.bandcamp.com/track/bohemian-rhapsody", "Club Edits 2024"),
+                "A Night at the Opera"),
+            Triple("Daft Punk - Around the World",
+                page("Around the World", "Daft Punk", "https://steppersclub.bandcamp.com/track/around-the-world", "EU Dubs"),
+                "Homework"),
+        )
+        for ((song, h, itunesAlbum) in cases) {
+            assertTrue(song, BandcampData.choose(listOf(h), song, itunesAlbum).isEmpty())
+            assertTrue(song, BandcampData.choose(listOf(h), song, null).isEmpty())        // no iTunes album → also rejected
+        }
+    }
+
+    @Test fun ownArtistPagesAreAccepted() {
+        val cases = listOf(
+            "Perturbator - Future Club" to page("Future Club", "Perturbator", "https://perturbator.bandcamp.com/track/future-club", "Dangerous Days"),
+            "Carpenter Brut - Turbo Killer" to page("Turbo Killer", "Carpenter Brut", "https://carpenterbrut.bandcamp.com/track/turbo-killer", "Turbo Killer"),
+            "Mitski - Nobody" to page("Nobody", "Mitski", "https://mitski.bandcamp.com/track/nobody", "Be the Cowboy"),
+            "Kevin MacLeod - Monkeys Spinning Monkeys" to page("Monkeys Spinning Monkeys", "Kevin MacLeod", "https://kevinmacleod.bandcamp.com/track/monkeys-spinning-monkeys", ""),
+            "Broke For Free - Night Owl" to page("Night Owl", "Broke For Free", "https://brokeforfree.bandcamp.com/track/night-owl", "Directionless EP"),
+            "Jahzzar - Siesta" to page("Siesta", "Jahzzar", "https://jahzzar.bandcamp.com/track/siesta", "Traveller's Guide"),
+            "Sigur Ros - Hoppipolla" to page("Hoppípolla", "Sigur Rós", "https://store.sigurros.com/track/hopp-polla", "Takk..."),
+        )
+        for ((song, h) in cases) {
+            assertEquals(song, listOf(h), BandcampData.choose(listOf(h), song, null))     // no iTunes needed for own pages
+            assertFalse(song, BandcampData.needsItunesAlbum(listOf(h), song))
+        }
+    }
+
+    @Test fun labelPageAcceptedOnlyWhenAlbumMatchesItunes() {
+        val label = page("Asteroid Rain", "Wice", "https://newretrowave.bandcamp.com/track/asteroid-rain", "Asteroid Rain")
+        assertTrue(BandcampData.needsItunesAlbum(listOf(label), "Wice - Asteroid Rain"))
+        assertEquals(listOf(label), BandcampData.choose(listOf(label), "Wice - Asteroid Rain", "Asteroid Rain"))
+        assertTrue(BandcampData.choose(listOf(label), "Wice - Asteroid Rain", "Magnatron 2.0").isEmpty())
+        assertTrue(BandcampData.choose(listOf(label), "Wice - Asteroid Rain", null).isEmpty())
+        val noAlbum = page("Asteroid Rain", "Wice", "https://newretrowave.bandcamp.com/track/asteroid-rain", "")
+        assertTrue(BandcampData.choose(listOf(noAlbum), "Wice - Asteroid Rain", "Asteroid Rain").isEmpty())
+    }
+
+    @Test fun ownPageWinsOverLabelPage() {
+        val label = page("Future Club", "Perturbator", "https://bloodmusic.bandcamp.com/track/future-club", "Dangerous Days")
+        val own = page("Future Club", "Perturbator", "https://perturbator.bandcamp.com/track/future-club", "Dangerous Days")
+        assertEquals(listOf(own), BandcampData.choose(listOf(label, own), "Perturbator - Future Club", "Dangerous Days"))
+    }
+
+    @Test fun pageAccountReadsSubdomainsAndCustomDomains() {
+        assertEquals("perturbator", BandcampData.pageAccount("https://perturbator.bandcamp.com/track/future-club"))
+        assertEquals("sigurros", BandcampData.pageAccount("https://store.sigurros.com/track/hopp-polla"))
+        assertEquals("example", BandcampData.pageAccount("https://music.example.co.uk/track/x"))
+    }
+
     // ── Bandcamp: real artist pages still match ─────────────────────────
 
     @Test fun ownPagesStillMatch() {

@@ -58,10 +58,43 @@ object BandcampData {
     fun bandMatches(artist: String, band: String): Boolean {
         val b = Matching.norm(band)
         if (b.isEmpty()) return false
-        val candidates = (artists(artist) + Matching.norm(artist)).filter { it.isNotEmpty() }.distinct()
-        return candidates.any { c ->
-            c == b || ((c in b || b in c) && minOf(c.length, b.length).toDouble() / maxOf(c.length, b.length) >= 0.75)
-        }
+        return nameMatches(artistNames(artist), b)
+    }
+
+    /** The split artists plus the whole artist string ("&" read as "and", and also with it left out). */
+    private fun artistNames(artist: String): List<String> =
+        (artists(artist) + Matching.norm(artist) + Matching.norm(artist.replace("&", " ")))
+            .filter { it.isNotEmpty() }.distinct()
+
+    /** Equal, or one contains the other and they are nearly the same length (≥ 75 %). */
+    private fun nameMatches(candidates: List<String>, name: String): Boolean = candidates.any { c ->
+        c == name || ((c in name || name in c) && minOf(c.length, name.length).toDouble() / maxOf(c.length, name.length) >= 0.75)
+    }
+
+    /**
+     * The account part of a Bandcamp page address: "https://pylot.bandcamp.com/track/x" → "pylot",
+     * and for a custom domain "https://store.sigurros.com/track/x" → "sigurros".
+     */
+    fun pageAccount(url: String): String {
+        val host = Regex("""https?://([^/:?#]+)""").find(url)?.groupValues?.get(1)?.lowercase().orEmpty()
+        val parts = host.split('.').filter { it.isNotEmpty() }
+        if (parts.size < 2) return host
+        if (host.endsWith(".bandcamp.com")) return parts.first()
+        val secondLevel = parts[parts.size - 2]
+        // "label.co.uk" style addresses: the account is one step further left.
+        return if (parts.size >= 3 && secondLevel in setOf("co", "com", "org", "net")) parts[parts.size - 3] else secondLevel
+    }
+
+    /** True if the page address belongs to the artist (artist.bandcamp.com or the artist's own domain). */
+    fun isArtistPage(artist: String, url: String): Boolean {
+        val account = Matching.norm(pageAccount(url))
+        return account.isNotEmpty() && nameMatches(artistNames(artist), account)
+    }
+
+    /** Same album, ignoring case, punctuation, accents and "(Remastered)"-style extras. */
+    fun sameAlbum(a: String, b: String): Boolean {
+        val x = Matching.norm(Matching.cleanTitle(a))
+        return x.isNotEmpty() && x == Matching.norm(Matching.cleanTitle(b))
     }
 
     /**
@@ -87,28 +120,42 @@ object BandcampData {
         return bandMatches(artist, gotArtist) && got == want && variants(title) == variants(gotTitle)
     }
 
-    /** The subdomain of a Bandcamp page: "https://pylot.bandcamp.com/track/x" → "pylot". */
-    private fun host(url: String): String =
-        Regex("""https?://([^/.]+)\.""").find(url)?.groupValues?.get(1)?.lowercase().orEmpty()
+    /** Results that pass the title, band-name and version checks (before the artist-page rule). */
+    private fun valid(hits: List<BcHit>, song: String): List<BcHit> =
+        hits.filter { it.url.contains("/track/") && isSameSong(song, it.name, it.band) && notOriginal(song, it.name, it.album) == null }
+            .distinctBy { it.url }
 
     /**
-     * Matching results, best first: the artist's own Bandcamp page over a label's, real albums
-     * over compilations, albums over singles.
+     * True if the only matching results are on other accounts (label, DJ, fan, compilation), so the
+     * iTunes album is needed to decide. Lets the caller skip the iTunes lookup when it isn't.
      */
-    fun choose(hits: List<BcHit>, song: String): List<BcHit> {
+    fun needsItunesAlbum(hits: List<BcHit>, song: String): Boolean {
         val (artist, _) = SongList.split(song)
-        val wantArtists = artists(artist)
-        return hits
-            .filter { it.url.contains("/track/") && isSameSong(song, it.name, it.band) && notOriginal(song, it.name, it.album) == null }
-            .sortedByDescending { h ->
-                var s = 0
-                val sub = Matching.norm(host(h.url))
-                if (sub.isNotEmpty() && wantArtists.any { it == sub || it in sub || sub in it }) s += 10
-                if (h.album.isNotEmpty() && COMPILATION.containsMatchIn(h.album)) s -= 5
-                if (h.album.isNotEmpty() && !COMPILATION.containsMatchIn(h.album)) s += 2
-                s
-            }
-            .distinctBy { it.url }
+        val v = valid(hits, song)
+        return v.isNotEmpty() && v.none { isArtistPage(artist, it.url) }
+    }
+
+    /**
+     * Matching results, best first, in two steps:
+     * 1. results on the artist's own page (artist.bandcamp.com or the artist's own domain);
+     * 2. only if there are none: results from other accounts whose album equals the album iTunes lists
+     *    for this song ([itunesAlbum]). No iTunes album, or a different/empty one → rejected (use YouTube).
+     * Real albums before compilations, albums before singles.
+     */
+    fun choose(hits: List<BcHit>, song: String, itunesAlbum: String? = null): List<BcHit> {
+        val (artist, _) = SongList.split(song)
+        val v = valid(hits, song)
+        val own = v.filter { isArtistPage(artist, it.url) }
+        val picked = own.ifEmpty {
+            if (itunesAlbum.isNullOrBlank()) emptyList()
+            else v.filter { it.album.isNotBlank() && sameAlbum(it.album, itunesAlbum) }
+        }
+        return picked.sortedByDescending { h ->
+            var s = 0
+            if (h.album.isNotEmpty() && COMPILATION.containsMatchIn(h.album)) s -= 5
+            if (h.album.isNotEmpty() && !COMPILATION.containsMatchIn(h.album)) s += 2
+            s
+        }
     }
 
     /** Results from Bandcamp's search API (both of its reply styles). */

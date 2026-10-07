@@ -151,7 +151,7 @@ class Downloader(
             var bandcampNote = ""
             if (source != Source.YOUTUBE && bandcamp != null && !bandcampOff) {
                 stepLog("Searching Bandcamp…")
-                val r = if (pretendBlocked) BcResult.Blocked("test switch is on") else bandcamp.find(song, log)
+                val r = if (pretendBlocked) BcResult.Blocked("test switch is on") else bandcamp.find(song, log) { itunesInfo()?.album }
                 if (stopped) break
                 when (r) {
                     is BcResult.Found -> {

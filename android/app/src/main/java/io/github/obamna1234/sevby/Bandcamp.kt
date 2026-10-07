@@ -25,8 +25,11 @@ class Bandcamp(private val web: BandcampWeb) {
     private val simpleUa = "Mozilla/5.0 (compatible; BandcampSongLinker/1.0)"
     private val browserUa = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36"
 
-    /** Find [song] on Bandcamp. [log] gets short progress notes. */
-    suspend fun find(song: String, log: (String) -> Unit): BcResult {
+    /**
+     * Find [song] on Bandcamp. [log] gets short progress notes. [itunesAlbum] gives the album iTunes lists
+     * for the song; it's only asked for when the sole matches are on other accounts (labels, DJs, fans).
+     */
+    suspend fun find(song: String, log: (String) -> Unit, itunesAlbum: suspend () -> String? = { null }): BcResult {
         val (artist, title) = SongList.split(song)
         if (artist.isEmpty()) return BcResult.NotFound      // no artist: too easy to pick the wrong song
 
@@ -38,6 +41,13 @@ class Bandcamp(private val web: BandcampWeb) {
                 null -> blockedWhy = "search refused"
                 else -> {
                     picks = BandcampData.choose(hits, song)
+                    if (picks.isEmpty() && BandcampData.needsItunesAlbum(hits, song)) {
+                        val album = itunesAlbum()
+                        picks = BandcampData.choose(hits, song, album)
+                        if (picks.isEmpty()) log("  Bandcamp only has this on other accounts" +
+                            (if (album.isNullOrBlank()) " and iTunes has no album to compare" else ", not on the album \"$album\"") +
+                            " – skipping them")
+                    }
                     if (picks.isNotEmpty()) break
                 }
             }
