@@ -40,6 +40,10 @@ object YouTube {
     @Volatile var lastError: String? = null
         private set
 
+    /** Short reason for the song list when nothing suitable was found (null = generic "not found"). */
+    @Volatile var lastNote: String? = null
+        private set
+
     suspend fun search(song: String, ctl: RunControl): List<YtEntry> {
         repeat(1 + NET_WAITS.size) { attempt ->
             if (ctl.isStopped()) return emptyList()
@@ -87,9 +91,21 @@ object YouTube {
     suspend fun fetch(song: String, work: File, ctl: RunControl, targetSeconds: Int = 0): Fetched? {
         ctl.log("  Searching YouTube…")
         lastError = null
-        val ranked = Matching.rank(search(song, ctl), song, targetSeconds)
-        if (ranked.isEmpty() && lastError != null) ctl.log("  YouTube search failed: $lastError")
+        lastNote = null
+        val all = Matching.rank(search(song, ctl), song, targetSeconds)
+        if (all.isEmpty() && lastError != null) ctl.log("  YouTube search failed: $lastError")
         if (ctl.isStopped()) return null
+
+        // Only videos whose title shares at least half of the song title's words (no "first hit" guesses).
+        val ranked = Matching.candidates(all, song)
+        if (ranked.isEmpty()) {
+            if (lastError == null) {
+                lastNote = "no matching video found on YouTube"
+                ctl.log("  No matching video on YouTube" +
+                    (all.firstOrNull()?.second?.let { " (closest: ${it.title} — ${it.channel})" } ?: ""))
+            }
+            return null
+        }
 
         val targets = mutableListOf<String>()
         ranked.take(2).forEachIndexed { i, (score, e) ->
@@ -99,7 +115,6 @@ object YouTube {
             }
             targets += e.watchUrl
         }
-        targets += "ytsearch1:$song"   // last resort, like the desktop app
 
         var lastErr = "no result"
         for (target in targets) {

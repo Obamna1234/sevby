@@ -67,6 +67,27 @@ object Matching {
         return score
     }
 
+    /** A YouTube result must contain at least this share of the wanted title's words. */
+    const val MIN_TITLE_SHARE = 0.5
+
+    /**
+     * The ranked results whose title shares at least half of the song title's words. Empty means
+     * "no matching video": the song fails instead of downloading a random first hit.
+     */
+    fun candidates(ranked: List<Pair<Double, YtEntry>>, song: String): List<Pair<Double, YtEntry>> {
+        val wanted = cleanTitle(SongList.split(song).second)
+        return ranked.filter { (_, e) -> titleShare(wanted, e.title) >= MIN_TITLE_SHARE }
+    }
+
+    /**
+     * True if a downloaded file is clearly a different version of the song (remix, edit, live…):
+     * both lengths known and they differ by more than max(12 s, 5 % of the real length).
+     */
+    fun lengthMismatch(fileSeconds: Double, realSeconds: Int): Boolean {
+        if (fileSeconds <= 0 || realSeconds <= 0) return false
+        return kotlin.math.abs(fileSeconds - realSeconds) > maxOf(12.0, 0.05 * realSeconds)
+    }
+
     fun rank(entries: List<YtEntry>, song: String, targetSeconds: Int = 0): List<Pair<Double, YtEntry>> =
         entries.mapIndexed { i, e -> score(e, song, i, targetSeconds) to e }.sortedByDescending { it.first }
 
@@ -79,8 +100,23 @@ object Matching {
     /** Title without "(feat. X)", "(Remastered)", "(Original Mix)" and "- 2011 Remaster" parts. */
     fun cleanTitle(t: String): String = t.replace(NOISE, "").replace(REMASTER_SUFFIX, "").trim()
 
-    /** Lowercase letters and digits only, for comparing names ("M.A.D.E.S" = "mades", "&" = "and"). */
-    fun norm(s: String): String = ampersand(s).lowercase().filter { it.isLetterOrDigit() }
+    /** Lowercase letters and digits only, for comparing names ("M.A.D.E.S" = "mades", "&" = "and", "ó" = "o"). */
+    fun norm(s: String): String = stripAccents(ampersand(s)).lowercase().filter { it.isLetterOrDigit() }
+
+    /** "Sigur Rós" → "Sigur Ros", so lists typed without accents still match. */
+    fun stripAccents(s: String): String =
+        java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD).replace(Regex("""\p{Mn}+"""), "")
+
+    /**
+     * Share of the wanted title's words that appear in [candidate] (0.0–1.0), comparing lower-case
+     * words with "&" read as "and". Used to drop YouTube results that are about something else.
+     */
+    fun titleShare(wantedTitle: String, candidate: String): Double {
+        val want = words(stripAccents(wantedTitle)).toSet()
+        if (want.isEmpty()) return 1.0
+        val got = words(stripAccents(candidate)).toSet()
+        return (want intersect got).size.toDouble() / want.size
+    }
 
     fun fmtLen(sec: Double?): String {
         if (sec == null || sec <= 0) return "?:??"

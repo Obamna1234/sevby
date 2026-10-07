@@ -35,12 +35,46 @@ object BandcampData {
     )
     private val VARIANTS = listOf("remix", "live", "instrumental", "acoustic", "cover", "edit", "mix", "version", "karaoke")
 
+    /** Tribute bands, remakes, covers, karaoke, "dubs", lullaby/8-bit versions … (same list as the desktop app). */
+    private val NOT_ORIGINAL = Regex(
+        """remake|re-?record|tribute|\bcovers?\b|bootleg|karaoke|\bdubs?\b|made famous|originally (performed|by)|""" +
+            """in the style of|\bversions?\b|rerecord|lullaby|8-?bit|piano (version|tribute)""",
+        RegexOption.IGNORE_CASE,
+    )
+    private val LIVE_ALBUM = Regex("""\blive\b|unplugged|in concert""", RegexOption.IGNORE_CASE)
+
     private fun artists(artist: String): List<String> =
         artist.split(Regex("""\s*(?:,|&|\bfeat\.?|\bft\.?|\bx\b|\band\b)\s*""", RegexOption.IGNORE_CASE))
             .map { Matching.norm(it) }.filter { it.isNotEmpty() }
 
     private fun variants(title: String) =
         VARIANTS.filter { Matching.words(Matching.cleanTitle(title)).contains(it) }.toSet()
+
+    /**
+     * True if the Bandcamp band name is the artist asked for: equal to one of the artists (or the whole
+     * artist string), or one name contains the other and they are nearly the same length (≥ 75 %).
+     * "Queen" ≠ "Queen Mary Band", but "Power Glove & PYLOT" = "Power Glove".
+     */
+    fun bandMatches(artist: String, band: String): Boolean {
+        val b = Matching.norm(band)
+        if (b.isEmpty()) return false
+        val candidates = (artists(artist) + Matching.norm(artist)).filter { it.isNotEmpty() }.distinct()
+        return candidates.any { c ->
+            c == b || ((c in b || b in c) && minOf(c.length, b.length).toDouble() / maxOf(c.length, b.length) >= 0.75)
+        }
+    }
+
+    /**
+     * Why a release isn't the original recording, or null if it's fine: remakes, tributes, covers,
+     * dubs… (unless the list line asks for that), and live albums (unless the title asks for live).
+     */
+    fun notOriginal(song: String, trackName: String, album: String): String? {
+        val (_, title) = SongList.split(song)
+        val text = "$trackName $album"
+        if (NOT_ORIGINAL.containsMatchIn(text) && !NOT_ORIGINAL.containsMatchIn(song)) return "not the original release"
+        if (album.isNotEmpty() && LIVE_ALBUM.containsMatchIn(album) && "live" !in Matching.words(title)) return "live album"
+        return null
+    }
 
     /** True if [gotTitle] by [gotArtist] is the song asked for (same rules as the iTunes lookup). */
     fun isSameSong(song: String, gotTitle: String, gotArtist: String): Boolean {
@@ -50,9 +84,7 @@ object BandcampData {
         if (want.isEmpty() || got.isEmpty()) return false
         val wantArtists = artists(artist)
         if (wantArtists.isEmpty()) return false
-        val gotA = Matching.norm(gotArtist)
-        val artistOk = gotA.isNotEmpty() && wantArtists.any { it in gotA || gotA in it }
-        return artistOk && got == want && variants(title) == variants(gotTitle)
+        return bandMatches(artist, gotArtist) && got == want && variants(title) == variants(gotTitle)
     }
 
     /** The subdomain of a Bandcamp page: "https://pylot.bandcamp.com/track/x" → "pylot". */
@@ -67,7 +99,7 @@ object BandcampData {
         val (artist, _) = SongList.split(song)
         val wantArtists = artists(artist)
         return hits
-            .filter { it.url.contains("/track/") && isSameSong(song, it.name, it.band) }
+            .filter { it.url.contains("/track/") && isSameSong(song, it.name, it.band) && notOriginal(song, it.name, it.album) == null }
             .sortedByDescending { h ->
                 var s = 0
                 val sub = Matching.norm(host(h.url))

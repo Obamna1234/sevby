@@ -17,7 +17,7 @@ android {
         minSdk = 24
         targetSdk = 34
         versionCode = (System.getenv("SEVBY_VERSION_CODE") ?: "1").toInt()
-        versionName = System.getenv("SEVBY_VERSION_NAME") ?: "0.1.0-beta"
+        versionName = System.getenv("SEVBY_VERSION_NAME") ?: "1.0.0-beta.3"
 
         ndk {
             abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86_64")
@@ -82,4 +82,6 @@ dependencies {
     implementation("androidx.documentfile:documentfile:1.0.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+
+    testImplementation("junit:junit:4.13.2")
 }

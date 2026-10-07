@@ -48,6 +48,11 @@ class Bandcamp(private val web: BandcampWeb) {
         for (hit in picks.take(2)) {
             val track = page(hit.url) ?: return BcResult.Blocked("track page refused")
             if (!BandcampData.isSameSong(song, track.title, track.artist.ifEmpty { hit.band })) continue
+            // The page knows the album name even when the search result didn't.
+            BandcampData.notOriginal(song, track.title, track.album)?.let { why ->
+                log("  Skipped a Bandcamp match: $why (${track.album})")
+                continue
+            }
             if (track.mp3Url.isEmpty()) {
                 log("  Bandcamp has this track, but it can't be streamed (purchase only)")
                 continue

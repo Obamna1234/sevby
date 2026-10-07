@@ -64,6 +64,21 @@ class Downloader(
         libraryNoted = from.libraryNoted   // the music-library note shows once per run, not once per list
     }
 
+    /** Length of an MP3 in seconds (0 if unknown). Bandcamp streams are 128 kbps, so size works as a backup. */
+    private fun mp3Seconds(file: File): Double {
+        val ms = runCatching {
+            val r = android.media.MediaMetadataRetriever()
+            try {
+                r.setDataSource(file.absolutePath)
+                r.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull()
+            } finally {
+                r.release()
+            }
+        }.getOrNull()
+        if (ms != null && ms > 0) return ms / 1000.0
+        return if (file.length() > 0) file.length() * 8.0 / 128_000 else 0.0
+    }
+
     private suspend fun waitWhilePaused() {
         while (paused && !stopped) delay(300)
     }
@@ -122,6 +137,14 @@ class Downloader(
                 isStopped = { stopped || paused },
             )
 
+            // iTunes details (real length, album, cover): looked up once per song, when first needed.
+            var itunes: AlbumInfo? = null
+            var itunesLooked = false
+            suspend fun itunesInfo(): AlbumInfo? {
+                if (!itunesLooked) { itunesLooked = true; itunes = withContext(Dispatchers.IO) { Itunes.lookup(song) } }
+                return itunes
+            }
+
             // ── 1. Bandcamp first (unless YouTube only, or Bandcamp kept blocking this run) ──
             var bcTrack: BcTrack? = null
             var bcMp3: File? = null
@@ -142,7 +165,19 @@ class Downloader(
                             val okDl = bandcamp.download(r.track, dest, { stopped || paused }) { p -> status(i + 1, songs.size, song, p) }
                             if (stopped) break@songLoop
                             if (paused) { log("  Paused – this song will start again when you resume"); continue }
-                            if (okDl) { bcTrack = r.track; bcMp3 = dest } else {
+                            if (okDl) {
+                                // A remix or other version can sit under the right name: compare with the real length.
+                                val real = itunesInfo()?.seconds ?: 0
+                                val fileSec = mp3Seconds(dest)
+                                if (Matching.lengthMismatch(fileSec, real)) {
+                                    log("  Bandcamp copy is ${Matching.fmtLen(fileSec)} but the real song is ${Matching.fmtLen(real.toDouble())}" +
+                                        " - probably a remix or other version, skipping it")
+                                    dest.delete()
+                                    bandcampNote = "Bandcamp had a different version"
+                                } else {
+                                    bcTrack = r.track; bcMp3 = dest
+                                }
+                            } else {
                                 log("  Bandcamp download failed")
                                 bandcampNote = "Bandcamp download failed"
                             }
@@ -192,7 +227,7 @@ class Downloader(
 
             // ── 2. YouTube, with album details + real cover from iTunes ──
             step("Looking up album info…")
-            val album = withContext(Dispatchers.IO) { Itunes.lookup(song) }
+            val album = itunesInfo()
             if (album != null) {
                 val bits = listOfNotNull(album.year.ifEmpty { null }, album.track.takeIf { it > 0 }?.let { "track $it" })
                 log("  Album: ${album.album}" + (if (bits.isNotEmpty()) " (${bits.joinToString(", ")})" else "") + " — iTunes")
@@ -216,8 +251,11 @@ class Downloader(
                 break
             }
             if (got == null) {
-                val why = if (YouTube.lastError != null) "YouTube error – update yt-dlp in About & updates"
-                          else "not found on YouTube"
+                val why = when {
+                    YouTube.lastError != null -> "YouTube error – update yt-dlp in About & updates"
+                    YouTube.lastNote != null -> YouTube.lastNote!!
+                    else -> "not found on YouTube"
+                }
                 fail(song, why + if (bandcampNote.isNotEmpty() && source == Source.BOTH) " ($bandcampNote)" else "")
                 continue
             }
