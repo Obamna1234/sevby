@@ -50,7 +50,7 @@ SEVBY looks for each song on **Bandcamp** first, and falls back to **YouTube** f
 
 ## What it does
 
-- Paste a Spotify playlist link (public or private; needs a Spotify Client ID, see below), **or** a list / `.txt` file of `Artist - Title` lines (CSV and M3U files work too), **or** a shared **Apple Music playlist link** with the *Apple Music (paste playlist link)* button (no sign-in; public playlists only, and it reads Apple's public web page, so it may stop working if Apple changes it)
+- Paste a Spotify playlist link (public or private; needs a Spotify Client ID, see below), **or** a list / `.txt` file of `Artist - Title` lines (CSV and M3U files work too), **or** a shared **Apple Music playlist link** with the *Apple Music* button (no sign-in; public playlists only, and it reads Apple's public web page, so it may stop working if Apple changes it)
 - Bandcamp first, YouTube for the rest (or choose *Bandcamp only* / *YouTube only*)
 - MP3 files with title, artist, album, year, track number and square cover art
 - YouTube matching picks the version with the right length and avoids live / remix / sped-up uploads
@@ -123,7 +123,7 @@ The first time, your browser opens so you can log in to Spotify and approve acce
 ## Using an Apple Music playlist (no sign-in)
 
 1. In Apple Music, open the playlist, tap **Share**, then **Copy Link**.
-2. In SEVBY press **Apple Music (paste playlist link)**, paste the link and press **Get songs**.
+2. In SEVBY press **Apple Music**, paste the link and press **Get songs**.
 3. The songs appear in the song box (named after the playlist). Press **Add to queue** or **Start Download**.
 
 This works for playlists anyone can open; private playlists won't work. SEVBY reads Apple's public web page for that one link, so it may stop working if Apple changes the page. If it does, export the playlist to text with a converter such as [TuneMyMusic](https://www.tunemymusic.com) and use *Song list / .txt file*.
@@ -131,7 +131,7 @@ This works for playlists anyone can open; private playlists won't work. SEVBY re
 ## Queue (many playlists, hands-off)
 
 1. Choose your save folder and source.
-2. Paste a Spotify link (or a song list / load a `.txt`) and press **Add to queue**. The inputs clear so you can add the next one.
+2. Paste a Spotify link (or a song list / import a `.txt`) and press **Add to queue**. The inputs clear so you can add the next one.
 3. Repeat, then press **Start Download (N lists)**.
 
 Items run one at a time, never in parallel. Each is saved in its own sub-folder (the Spotify playlist's name, or the `.txt` file's name). Items that finish leave the queue; if you press Stop, the rest stay queued. Songs already downloaded are skipped, so running again is always safe.
