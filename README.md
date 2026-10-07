@@ -16,7 +16,7 @@
 
 <p align="center">
 <img width="760" height="929" alt="image" src="https://github.com/user-attachments/assets/a98e06d5-1215-4a13-ad66-3e6b109f7abd" />
-<br><em>SEVBY v1.0.1 UI for pasting a Spotify URL playlist</em>
+<br><em>SEVBY v1.0.1 UI for pasting a Spotify URL playlist and the Client ID "What is this" pop up window</em>
 </p>
 
 <p align="center">
