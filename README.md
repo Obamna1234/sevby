@@ -80,15 +80,26 @@ From source you also need **ffmpeg** (put `ffmpeg.exe` / `ffmpeg` next to `sevby
 ## Android
 
 **SEVBY for Android** is a proper app (no Termux needed). Get the APK from the **Releases** page: look for the newest
-release named *SEVBY for Android* (tag `android-v…`) and download `SEVBY-…-arm64-v8a.apk` (or `…-universal.apk` if
-unsure). Open it on your phone and allow installing apps from your browser or Files app when asked. Android 7.0+.
+release named *SEVBY for Android* (tag `android-v…`). Open the APK on your phone and allow installing apps from your browser or Files app when asked. Android 7.0+.
 
-- Paste or load a `.txt` song list (`Artist - Title` lines), pick a folder, press **Start Download**
+**Which APK?**
+
+| File | Use it for |
+|---|---|
+| `SEVBY-…-arm64-v8a.apk` | Most phones (almost every phone from the last several years) |
+| `SEVBY-…-armeabi-v7a.apk` | Old 32-bit phones |
+| `SEVBY-…-universal.apk` | If you're unsure (bigger file, works on all of the above) |
+| `SEVBY-…-x86_64.apk` | Emulators and PCs only, not phones |
+
+If you install the wrong one, SEVBY shows a **Wrong APK for this device** message and tells you which APK to install instead.
+
+- Paste or **Import** a song list, pick a folder, press **Start Download**. Import reads `.txt` lists (`Artist - Title` per line), `.csv` exports from Chosic, Exportify, TuneMyMusic, Soundiiz and Apple Music, and `.m3u` playlists
+- **Official names:** file names and tags use Apple's official spelling, however you type the line (for example `kataklysm - black sheep` is saved as `Kataklysm - The Black Sheep`)
 - Bandcamp first, YouTube for the rest, with album details from Bandcamp or Apple's iTunes Search
 - Queue, Pause / Resume / Stop (also from the notification), *Retry failed*, skips songs already in the folder
 - Keeps running in the background; update the downloader from **About & updates** when YouTube changes
-- **Apple Music:** tap *Apple Music* and paste a public playlist or album link; SEVBY reads the song list itself (no sign-in)
-- Spotify playlists: no Spotify login on Android yet. Tap **Open Chosic** under the song box, paste the playlist link into [Chosic](https://www.chosic.com/spotify-playlist-exporter/), then paste or load the song list in SEVBY
+- **Apple Music:** tap *Apple Music (paste a link)* and paste a public playlist or album link; SEVBY reads the song list itself (no sign-in)
+- **Spotify playlists:** no Spotify login on Android yet. Tap *Chosic (Spotify playlists)* under the song box to open the Chosic website, paste a **public** playlist link there, then copy or download the song list it gives you and **Import** it (or paste it) in SEVBY. [Chosic](https://www.chosic.com/spotify-playlist-exporter/) is a separate free website
 
 The APK bundles youtubedl-android (GPL v3), so the APK as a whole is distributed under the GPL v3; see
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Developer notes: [android/README.md](android/README.md).
