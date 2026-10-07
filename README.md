@@ -29,15 +29,12 @@
 <br><em>SEVBY v1.0.1 About &amp; Updates window</em>
 </p>
 
-<p align="center">
-<img width="300" alt="SEVBY main screen" src="https://github.com/user-attachments/assets/4ad5b96a-ec6e-41ba-af0b-01ef6312ce06" /> 
-<br><em>SEVBY for Android (beta) downloading from an imported .txt file playlist</em>
-</p>
-
-<p align="center">
-<img width="300" alt="SEVBY log after a download" src="https://github.com/user-attachments/assets/62146c58-6887-44ef-a0dc-13e8905e1ea2" />
-<br><em>SEVBY for Android (beta) About &amp; Updates window</em>
-</p>
+<table align="center">
+<tr>
+<td align="center"><img width="300" alt="SEVBY main screen" src="https://github.com/user-attachments/assets/4ad5b96a-ec6e-41ba-af0b-01ef6312ce06" /><br><em>SEVBY for Android (beta) downloading from an imported .txt file playlist</em></td>
+<td align="center"><img width="300" alt="SEVBY log after a download" src="https://github.com/user-attachments/assets/62146c58-6887-44ef-a0dc-13e8905e1ea2" /><br><em>SEVBY for Android (beta) About &amp; Updates window</em></td>
+</tr>
+</table>
 
 Turn a Spotify playlist (or a plain text list of songs) into tagged MP3s on your own computer or Android phone.
 SEVBY looks for each song on **Bandcamp** first, and falls back to **YouTube** for anything it can't find.
