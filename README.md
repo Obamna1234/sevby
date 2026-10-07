@@ -2,26 +2,31 @@
 
 # SEVBY: Playlist to MP3
 
-*Screenshots show the Windows version (last two images: Android). Linux and macOS look similar.*
+*Screenshots show the Windows version (last two images: Android). Linux and macOS builds are untested, so they may look slightly different.*
 
 <p align="center">
-<img width="758" height="929" alt="image" src="https://github.com/user-attachments/assets/0ee62477-1992-410a-b328-431946444709" />
-<br><em>SEVBY v1.0.0 downloading from an imported .txt file playlist</em>
+<img width="760" height="929" alt="image" src="https://github.com/user-attachments/assets/12c0eaf7-1d8e-4cd7-9865-ce3a48851911" />
+<br><em>SEVBY v1.0.1 importing a .txt file playlist</em>
 </p>
 
 <p align="center">
-<img width="758" height="928" alt="image" src="https://github.com/user-attachments/assets/01e7bd1d-93a9-4622-84be-256c91aa2ace" />
-<br><em>SEVBY v1.0.0 UI for pasting a Spotify URL playlist</em>
+<img width="758" height="927" alt="image" src="https://github.com/user-attachments/assets/d1d5add3-f3ca-4372-b6f2-f82ff9546723" />
+<br><em>SEVBY v1.0.1 downloading from an imported .txt file playlist</em>
 </p>
 
 <p align="center">
-<img width="758" height="929" alt="image" src="https://github.com/user-attachments/assets/da86e397-df81-40a8-8239-4e16cf9b9769" />
-<br><em>SEVBY v1.0.0 exporting a Apple Music playlist URL to .txt &amp; automatically pasting into the text box</em>
+<img width="760" height="929" alt="image" src="https://github.com/user-attachments/assets/a98e06d5-1215-4a13-ad66-3e6b109f7abd" />
+<br><em>SEVBY v1.0.1 UI for pasting a Spotify URL playlist</em>
 </p>
 
 <p align="center">
-<img width="758" height="929" alt="image" src="https://github.com/user-attachments/assets/6de1cf8c-44be-4b9d-a37d-b9b62fe57d43" />
-<br><em>SEVBY v1.0.0 About &amp; Updates window</em>
+<img width="759" height="929" alt="image" src="https://github.com/user-attachments/assets/1f9e483e-9f6e-4be8-93b8-c954c35b3306" />
+<br><em>SEVBY v1.0.1 exporting a Apple Music playlist URL to .txt &amp; automatically pasting into the text box</em>
+</p>
+
+<p align="center">
+<img width="758" height="929" alt="image" src="https://github.com/user-attachments/assets/e3a7f254-545c-4fec-a6d2-28ce09e5202f" />
+<br><em>SEVBY v1.0.1 About &amp; Updates window</em>
 </p>
 
 <p align="center">
