@@ -133,6 +133,9 @@
 
             <Button
                 android:id="@+id/loadTxt"
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+                app:backgroundTint="@color/tonal"
+                android:textColor="@color/accent"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
@@ -146,6 +149,9 @@
 
             <Button
                 android:id="@+id/chosic"
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+                app:backgroundTint="@color/tonal"
+                android:textColor="@color/accent"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
@@ -160,6 +166,9 @@
 
             <Button
                 android:id="@+id/appleMusic"
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+                app:backgroundTint="@color/tonal"
+                android:textColor="@color/accent"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"

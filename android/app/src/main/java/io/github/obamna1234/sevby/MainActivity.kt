@@ -98,9 +98,9 @@ class MainActivity : AppCompatActivity() {
             }
             false
         }
-        setLabel(b.loadTxt, "Import .txt", "from your files")
-        setLabel(b.chosic, "Chosic website", "Spotify → .txt")
-        setLabel(b.appleMusic, "Apple Music", "paste link → list")
+        setLabel(b.loadTxt, "Import", ".txt or .csv", R.drawable.ic_import_file)
+        setLabel(b.chosic, "Chosic", "Spotify playlists", R.drawable.ic_website)
+        setLabel(b.appleMusic, "Apple Music", "paste a link", R.drawable.ic_link)
         b.loadTxt.setOnClickListener {
             pickTxt.launch(arrayOf("text/*", "application/csv", "application/vnd.ms-excel", "audio/x-mpegurl", "audio/mpegurl", "application/vnd.apple.mpegurl"))
         }
@@ -250,13 +250,42 @@ class MainActivity : AppCompatActivity() {
     private fun songs() = SongList.parse(b.songs.text?.toString().orEmpty())
 
     /** Button text with an optional smaller second line. */
-    private fun setLabel(button: android.widget.Button, main: String, sub: String?) {
-        if (sub == null) { button.text = main; return }
-        val t = SpannableStringBuilder(main).append('\n')
-        val at = t.length
-        t.append(sub)
-        t.setSpan(RelativeSizeSpan(0.78f), at, t.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+    /** Two-line button label: [main] (with an optional small [icon] in front) over a smaller, softer [sub]. */
+    private fun setLabel(button: android.widget.Button, main: String, sub: String?, icon: Int? = null) {
+        val t = SpannableStringBuilder()
+        if (icon != null) {
+            ContextCompat.getDrawable(this, icon)?.mutate()?.let { d ->
+                val px = (button.textSize * 1.05f).toInt()
+                d.setBounds(0, 0, px, px)
+                d.setTint(color(R.color.accent))
+                t.append("\u00A0").setSpan(CenteredIconSpan(d), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                t.append("\u2009")
+            }
+        }
+        t.append(main)
+        if (sub != null) {
+            t.append('\n')
+            val at = t.length
+            t.append(sub)
+            t.setSpan(RelativeSizeSpan(0.78f), at, t.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            t.setSpan(ForegroundColorSpan(color(R.color.tonal_sub)), at, t.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        button.isAllCaps = false
         button.text = t
+    }
+
+    /** An icon drawn in the middle of the text line (ImageSpan's own centring needs Android 10). */
+    private class CenteredIconSpan(d: android.graphics.drawable.Drawable) : android.text.style.ImageSpan(d) {
+        override fun draw(canvas: android.graphics.Canvas, text: CharSequence?, start: Int, end: Int, x: Float,
+                          top: Int, y: Int, bottom: Int, paint: android.graphics.Paint) {
+            val fm = paint.fontMetricsInt
+            val d = drawable
+            val shift = y + (fm.ascent + fm.descent) / 2 - d.bounds.height() / 2
+            canvas.save()
+            canvas.translate(x, shift.toFloat())
+            d.draw(canvas)
+            canvas.restore()
+        }
     }
 
     private fun updateCount() {
@@ -649,7 +678,7 @@ class MainActivity : AppCompatActivity() {
                 .setMessage("This playlist has $total songs, but Apple Music's public web page only shows the first " +
                     "${list.songs.size}, so the last ${total - list.songs.size} aren't in the list.\n\n" +
                     "To get them too, split the playlist into smaller ones (about 100 songs each) in Apple Music, " +
-                    "or export it to a .txt file with another service and use Import .txt.")
+                    "or export it to a .txt file with another service and use Import.")
                 .setPositiveButton("OK", null)
                 .show()
         }
@@ -663,7 +692,7 @@ class MainActivity : AppCompatActivity() {
         if (!ok) { Toast.makeText(this, "No browser found to open Chosic", Toast.LENGTH_LONG).show(); return }
         Toast.makeText(
             this,
-            "In Chosic: paste the Spotify playlist link, then copy or download the song list and paste it here or use Import .txt",
+            "In Chosic: paste the Spotify playlist link, then copy or download the song list and paste it here or use Import",
             Toast.LENGTH_LONG,
         ).show()
     }
@@ -731,6 +760,7 @@ class MainActivity : AppCompatActivity() {
         for (v in listOf(b.songs, b.loadTxt, b.chosic, b.appleMusic, b.clearSongs, b.chooseFolder, b.srcBoth, b.srcBandcamp, b.srcYoutube)) {
             v.isEnabled = !s.running
         }
+        for (v in listOf(b.loadTxt, b.chosic, b.appleMusic)) v.alpha = if (s.running) 0.45f else 1f   // dimmed while downloading
         b.start.backgroundTintList = ColorStateList.valueOf(color(if (s.running) R.color.stop_red else R.color.accent))
         b.start.setTextColor(if (s.running) Color.WHITE else color(R.color.on_accent))
         if (s.running) {

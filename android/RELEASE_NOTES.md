@@ -3,8 +3,8 @@
 - Better matching: rejects tribute bands, re-recordings, live albums and other accounts' uploads; checks the Bandcamp file's length against Apple's
 - File names and tags use the official spelling from Apple ("kataklysm - black sheep" → `Kataklysm - The Black Sheep.mp3`); songs already saved under the name you typed are still skipped
 - A leading "The / A / An" no longer stops a song being found
-- **Import .txt** also reads CSV exports (Chosic, Exportify, TuneMyMusic, Soundiiz, Apple Music) and M3U playlists
-- Clearer buttons: **Import .txt**, **Chosic website** (Spotify → .txt), **Apple Music** (paste a link)
+- **Import** also reads CSV exports (Chosic, Exportify, TuneMyMusic, Soundiiz, Apple Music) and M3U playlists
+- Clearer buttons with icons: **Import** (.txt or .csv), **Chosic** (Spotify playlists), **Apple Music** (paste a link)
 
 ---
 
@@ -20,7 +20,7 @@ track number and square cover art (album details from Bandcamp or Apple's iTunes
 - Update the downloader (yt-dlp) from **About & updates** when YouTube changes – no reinstall needed
 - Tells you when a new SEVBY version is out (banner on the main screen and in **About & updates**); one tap downloads it and it installs over the old one, keeping your settings
 - **Apple Music**: paste a public Apple Music playlist or album link and SEVBY fills in the song list (no sign-in)
-- Got a Spotify playlist? The **Chosic website** button turns it into a song list to paste
+- Got a Spotify playlist? The **Chosic** button opens the Chosic website, which turns it into a song list to paste
 - If Bandcamp blocks your connection (some mobile networks and hotspots do), it falls back to YouTube
 
 **Which file?**
