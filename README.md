@@ -25,12 +25,12 @@
 </p>
 
 <p align="center">
-<img width="428" height="888" alt="image" src="https://github.com/user-attachments/assets/7de025c7-fb4a-487f-8cc7-0f3f32df543a" />
+<img width="300" alt="SEVBY main screen" src="https://github.com/user-attachments/assets/4ad5b96a-ec6e-41ba-af0b-01ef6312ce06" /> 
 <br><em>SEVBY for Android (beta) downloading from an imported .txt file playlist</em>
 </p>
 
 <p align="center">
-<img width="423" height="887" alt="image" src="https://github.com/user-attachments/assets/54d2af9a-6efa-4b7b-aedb-7584e012b0e2" />
+<img width="300" alt="SEVBY log after a download" src="https://github.com/user-attachments/assets/62146c58-6887-44ef-a0dc-13e8905e1ea2" />
 <br><em>SEVBY for Android (beta) About &amp; Updates window</em>
 </p>
 
