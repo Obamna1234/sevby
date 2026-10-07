@@ -68,6 +68,25 @@ object Engine {
         }
     }
 
+    /**
+     * If the installed APK is for the wrong kind of processor (e.g. the ARM APK on an x86_64 emulator),
+     * a short explanation; null when it fits. The bundled Python/FFmpeg can't run in that case.
+     * (A 32-bit ARM APK on a 64-bit ARM phone is fine, so only ARM vs x86 counts.)
+     */
+    fun wrongApk(context: Context): String? {
+        val dir = context.applicationInfo.nativeLibraryDir ?: return null
+        val appAbi = when {
+            dir.endsWith("/arm64") -> "arm64-v8a"
+            dir.endsWith("/arm") -> "armeabi-v7a"
+            dir.endsWith("/x86_64") -> "x86_64"
+            dir.endsWith("/x86") -> "x86"
+            else -> return null
+        }
+        val device = android.os.Build.SUPPORTED_ABIS.firstOrNull() ?: return null
+        if (appAbi.startsWith("x86") == device.startsWith("x86")) return null
+        return "This is the $appAbi APK, but this device needs $device. Install SEVBY-…-$device.apk or the universal APK."
+    }
+
     /** Kill a running yt-dlp started by [run]. */
     fun stop(id: String) {
         runCatching { YoutubeDL.getInstance().destroyProcessById(id) }

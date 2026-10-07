@@ -5,6 +5,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import kotlinx.coroutines.runBlocking
 import org.junit.Test
 
 /**
@@ -287,5 +288,62 @@ class MatchingRulesTest {
         // The downloader checks the typed name first (before the iTunes lookup), then the official one.
         assertTrue(SongList.safeFileName(typed) + ".mp3" in inFolder)              // skipped, nothing downloaded
         assertEquals("Kataklysm - The Black Sheep.mp3", SongList.safeFileName(official(typed)) + ".mp3")
+    }
+
+    // ── Second search when the first finds nothing (desktop v18) ────────
+
+    private fun yt(id: String, title: String, channel: String, sec: Double) = YtEntry(id, id, title, channel, sec)
+
+    /** Mocked YouTube: each query gets its own results; records which queries were searched and how many results were asked for. */
+    private class FakeYouTube(val results: Map<String, List<YtEntry>>) {
+        val asked = mutableListOf<Pair<String, Int>>()
+        suspend fun search(q: String, n: Int): List<YtEntry> { asked += q to n; return results[q].orEmpty() }
+    }
+
+    /** First search for "PYLOT - Duel": only unrelated titles, so the title filter leaves nothing. */
+    private val unrelated = listOf(
+        yt("o1", "PYLOT - Locke", "PYLOT", 260.0),
+        yt("o2", "Synthwave Mix 2017", "Retro Lab", 3600.0),
+        yt("o3", "Pilot Training Day 1", "Flight Club", 600.0),
+    )
+
+    @Test fun secondSearchFindsPylotDuel() = runBlocking {
+        val fake = FakeYouTube(mapOf(
+            "PYLOT - Duel" to unrelated,                                        // 1st search: nothing usable
+            "PYLOT Duel official audio" to listOf(yt("x", "Duel", "Pixies", 200.0), yt("p", "Duel", "PYLOT", 275.0)),
+        ))
+        val find = Matching.findOnYouTube("PYLOT - Duel", 275) { q, n -> fake.search(q, n) }
+        assertTrue(find.extraSearch)
+        assertEquals("p", find.ranked.first().second.id)                         // the PYLOT-channel upload
+        assertTrue(find.ranked.none { it.second.channel == "Pixies" })           // other artist's "Duel" not accepted
+        assertEquals(listOf("PYLOT - Duel" to 8, "PYLOT Duel official audio" to 15), fake.asked)
+    }
+
+    @Test fun otherArtistsDuelStillFails() = runBlocking {
+        val fake = FakeYouTube(mapOf(
+            "PYLOT - Duel" to unrelated,
+            "PYLOT Duel official audio" to listOf(yt("x", "Duel", "Some Other Band", 275.0)),
+        ))
+        val find = Matching.findOnYouTube("PYLOT - Duel", 275) { q, n -> fake.search(q, n) }
+        assertTrue(find.ranked.isEmpty())
+        assertFalse(find.extraSearch)
+        assertEquals(listOf("PYLOT - Duel", "PYLOT Duel official audio", "Duel PYLOT", "PYLOT - Topic Duel"),
+            fake.asked.map { it.first })                                         // all three extra wordings tried, in order
+    }
+
+    @Test fun songFoundFirstTimeSkipsExtraSearches() = runBlocking {
+        val fake = FakeYouTube(mapOf(
+            "Perturbator - Future Club" to listOf(yt("f", "Perturbator - Future Club", "Perturbator", 286.0)),
+        ))
+        val find = Matching.findOnYouTube("Perturbator - Future Club", 286) { q, n -> fake.search(q, n) }
+        assertEquals("f", find.ranked.first().second.id)
+        assertFalse(find.extraSearch)
+        assertEquals(1, fake.asked.size)
+    }
+
+    @Test fun extraSearchesUseTitleWithoutBrackets() {
+        assertEquals(listOf("Powercyan Space Rock official audio", "Space Rock Powercyan", "Powercyan - Topic Space Rock"),
+            Matching.extraQueries("Powercyan - Space Rock (Pylot Remix)"))
+        assertTrue(Matching.extraQueries("Duel").isEmpty())                       // no artist: no extra searches
     }
 }

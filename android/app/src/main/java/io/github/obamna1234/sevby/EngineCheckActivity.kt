@@ -101,8 +101,10 @@ class EngineCheckActivity : AppCompatActivity() {
         val v = Engine.run("--version")
         val installed = v.out.trim()
         if (!v.ok || installed.isEmpty()) {
-            b.ytdlpVersion.text = "Not working – see Advanced"
-            b.ytdlpStatus.text = ""
+            val wrong = Engine.wrongApk(this)
+            b.ytdlpVersion.text = if (wrong != null) "Wrong APK for this device" else "Not working – see Advanced"
+            b.ytdlpStatus.text = wrong ?: ""
+            b.updateYtdlp.text = "Check for updates"
             return
         }
         b.ytdlpVersion.text = "Version $installed"
@@ -135,6 +137,7 @@ class EngineCheckActivity : AppCompatActivity() {
         line("SEVBY ${pi.versionName}")
         line("Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT}), ${Build.MANUFACTURER} ${Build.MODEL}")
         line("CPU: ${Build.SUPPORTED_ABIS.joinToString()}")
+        Engine.wrongApk(this)?.let { line("WRONG APK: $it") }
         line()
         line("Starting engine (first launch unpacks files, can take ~10 s)...")
 
@@ -172,7 +175,7 @@ class EngineCheckActivity : AppCompatActivity() {
                 "SEVBY reads Bandcamp through Android's browser engine when needed"
         )
         line()
-        line("Engine OK.")
+        line(if (ver.ok) "Engine OK." else "Engine NOT working – yt-dlp didn't start (see above).")
         b.runTest.isEnabled = true
     }
 

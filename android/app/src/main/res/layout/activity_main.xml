@@ -142,8 +142,8 @@
                 android:insetTop="0dp"
                 android:insetBottom="0dp"
                 android:minHeight="52dp"
-                android:paddingStart="6dp"
-                android:paddingEnd="6dp"
+                android:paddingStart="2dp"
+                android:paddingEnd="2dp"
                 android:lineSpacingMultiplier="0.9"
                 android:textSize="13sp" />
 
@@ -159,8 +159,8 @@
                 android:insetTop="0dp"
                 android:insetBottom="0dp"
                 android:minHeight="52dp"
-                android:paddingStart="6dp"
-                android:paddingEnd="6dp"
+                android:paddingStart="2dp"
+                android:paddingEnd="2dp"
                 android:lineSpacingMultiplier="0.9"
                 android:textSize="13sp" />
 
@@ -176,8 +176,8 @@
                 android:insetTop="0dp"
                 android:insetBottom="0dp"
                 android:minHeight="52dp"
-                android:paddingStart="6dp"
-                android:paddingEnd="6dp"
+                android:paddingStart="2dp"
+                android:paddingEnd="2dp"
                 android:lineSpacingMultiplier="0.9"
                 android:textSize="13sp" />
         </LinearLayout>

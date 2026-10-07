@@ -277,6 +277,7 @@ class Downloader(
             }
             if (got == null) {
                 val why = when {
+                    YouTube.lastError != null && Engine.wrongApk(context) != null -> "wrong APK for this device – see About & updates"
                     YouTube.lastError != null -> "YouTube error – update yt-dlp in About & updates"
                     YouTube.lastNote != null -> YouTube.lastNote!!
                     else -> "not found on YouTube"

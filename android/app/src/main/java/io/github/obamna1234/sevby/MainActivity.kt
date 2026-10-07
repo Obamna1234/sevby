@@ -181,7 +181,9 @@ class MainActivity : AppCompatActivity() {
                 Engine.init(this@MainActivity)
                 val v = Engine.run("--version")
                 if (!v.ok) {
-                    b.engineStatus.text = "Engine problem – tap About & updates for details"
+                    b.engineStatus.text = if (Engine.wrongApk(this@MainActivity) != null)
+                        "Wrong APK for this device – tap About & updates"
+                    else "Engine problem – tap About & updates for details"
                     return@launch
                 }
                 installedVersion = v.out.trim()
@@ -255,7 +257,7 @@ class MainActivity : AppCompatActivity() {
         val t = SpannableStringBuilder()
         if (icon != null) {
             ContextCompat.getDrawable(this, icon)?.mutate()?.let { d ->
-                val px = (button.textSize * 1.05f).toInt()
+                val px = (button.textSize * 0.95f).toInt()
                 d.setBounds(0, 0, px, px)
                 d.setTint(color(R.color.accent))
                 t.append("\u00A0").setSpan(CenteredIconSpan(d), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
@@ -272,6 +274,16 @@ class MainActivity : AppCompatActivity() {
         }
         button.isAllCaps = false
         button.text = t
+        // On a narrow phone, shrink the text a little until the name fits on one line (sub line below it).
+        val maxLines = if (sub != null) 2 else 1
+        button.post {
+            val lines = button.layout?.lineCount ?: return@post
+            val sp = button.textSize / resources.displayMetrics.scaledDensity
+            if (lines > maxLines && sp > 10.5f) {
+                button.textSize = sp - 0.5f
+                setLabel(button, main, sub, icon)
+            }
+        }
     }
 
     /** An icon drawn in the middle of the text line (ImageSpan's own centring needs Android 10). */

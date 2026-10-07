@@ -44,11 +44,11 @@ object YouTube {
     @Volatile var lastNote: String? = null
         private set
 
-    suspend fun search(song: String, ctl: RunControl): List<YtEntry> {
+    suspend fun search(song: String, ctl: RunControl, results: Int = Matching.FIRST_SEARCH_RESULTS): List<YtEntry> {
         repeat(1 + NET_WAITS.size) { attempt ->
             if (ctl.isStopped()) return emptyList()
             val r = Engine.run(
-                listOf("-J", "--flat-playlist", "--no-warnings", "ytsearch8:$song"),
+                listOf("-J", "--flat-playlist", "--no-warnings", "ytsearch$results:$song"),
                 onStart = ctl.onStart,
             )
             if (r.ok) {
@@ -92,12 +92,19 @@ object YouTube {
         ctl.log("  Searching YouTube…")
         lastError = null
         lastNote = null
-        val all = Matching.rank(search(song, ctl), song, targetSeconds)
+        // Only videos whose title shares at least half of the song title's words (no "first hit" guesses).
+        // If the normal search has none, up to three other wordings are tried (artist must match too).
+        val find = Matching.findOnYouTube(song, targetSeconds) { query, n ->
+            if (ctl.isStopped()) null
+            else search(query, ctl, n).takeUnless { it.isEmpty() && lastError != null }
+        }
+        val all = find.firstResults
         if (all.isEmpty() && lastError != null) ctl.log("  YouTube search failed: $lastError")
         if (ctl.isStopped()) return null
 
-        // Only videos whose title shares at least half of the song title's words (no "first hit" guesses).
-        val ranked = Matching.candidates(all, song)
+        val ranked = find.ranked
+        if (ranked.isEmpty() && all.isNotEmpty()) lastError = null   // an extra search failing doesn't make it a YouTube error
+        if (find.extraSearch) ctl.log("  (found with a different search wording)")
         if (ranked.isEmpty()) {
             if (lastError == null) {
                 lastNote = "no matching video found on YouTube"

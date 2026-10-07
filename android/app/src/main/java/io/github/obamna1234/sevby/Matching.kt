@@ -79,6 +79,63 @@ object Matching {
         return ranked.filter { (_, e) -> titleShare(wanted, e.title) >= MIN_TITLE_SHARE }
     }
 
+    // ── Second search when the first finds nothing (desktop v18) ─────────
+
+    const val FIRST_SEARCH_RESULTS = 8
+    const val EXTRA_SEARCH_RESULTS = 15
+    const val MIN_ARTIST_SHARE = 0.5
+    private val ANY_BRACKETS = Regex("""\s*[(\[][^)\]]*[)\]]""")
+
+    /** Song title with every bracketed part removed, for the extra searches. */
+    fun searchTitle(song: String): String {
+        val t = SongList.split(song).second
+        return t.replace(ANY_BRACKETS, "").trim().ifEmpty { cleanTitle(t) }
+    }
+
+    /** The extra search wordings, tried in this order. None when the line has no artist. */
+    fun extraQueries(song: String): List<String> {
+        val artist = SongList.split(song).first.trim()
+        val title = searchTitle(song)
+        if (artist.isEmpty() || title.isEmpty()) return emptyList()
+        return listOf("$artist $title official audio", "$title $artist", "$artist - Topic $title")
+    }
+
+    /** Share of the artist's words found in [text] (video title + channel name). */
+    fun artistShare(artist: String, text: String): Double {
+        val want = words(stripAccents(artist)).toSet()
+        if (want.isEmpty()) return 1.0
+        val got = words(stripAccents(text)).toSet()
+        return (want intersect got).size.toDouble() / want.size
+    }
+
+    /**
+     * Candidates from an extra search: half the title words in the video title AND half the artist
+     * words in the video title or channel, so another artist's song with the same title isn't taken.
+     */
+    fun extraCandidates(ranked: List<Pair<Double, YtEntry>>, song: String): List<Pair<Double, YtEntry>> {
+        val artist = SongList.split(song).first
+        return candidates(ranked, song).filter { (_, e) -> artistShare(artist, "${e.title} ${e.channel}") >= MIN_ARTIST_SHARE }
+    }
+
+    /** What [findOnYouTube] found: ranked candidates (empty = none), the first search's results, and whether an extra search found them. */
+    data class YtFind(val ranked: List<Pair<Double, YtEntry>>, val firstResults: List<Pair<Double, YtEntry>>, val extraSearch: Boolean)
+
+    /**
+     * Normal search first (unchanged). Only if it leaves no candidate, try [extraQueries] one after the
+     * other and stop at the first that gives one. [search] returns null when YouTube gave an error.
+     */
+    suspend fun findOnYouTube(song: String, targetSeconds: Int, search: suspend (query: String, results: Int) -> List<YtEntry>?): YtFind {
+        val first = rank(search(song, FIRST_SEARCH_RESULTS) ?: return YtFind(emptyList(), emptyList(), false), song, targetSeconds)
+        val found = candidates(first, song)
+        if (found.isNotEmpty()) return YtFind(found, first, false)
+        for (q in extraQueries(song)) {
+            val hits = search(q, EXTRA_SEARCH_RESULTS) ?: break
+            val extra = extraCandidates(rank(hits, song, targetSeconds), song)
+            if (extra.isNotEmpty()) return YtFind(extra, first, true)
+        }
+        return YtFind(emptyList(), first, false)
+    }
+
     /**
      * True if a downloaded file is clearly a different version of the song (remix, edit, live…):
      * both lengths known and they differ by more than max(12 s, 5 % of the real length).

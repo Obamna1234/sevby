@@ -3,6 +3,8 @@
 - Better matching: rejects tribute bands, re-recordings, live albums and other accounts' uploads; checks the Bandcamp file's length against Apple's
 - File names and tags use the official spelling from Apple ("kataklysm - black sheep" → `Kataklysm - The Black Sheep.mp3`); songs already saved under the name you typed are still skipped
 - A leading "The / A / An" no longer stops a song being found
+- If YouTube's first search finds nothing, SEVBY tries up to three other wordings (the artist has to match too)
+- Clear message when the wrong APK is installed for the device (e.g. the ARM one on an emulator)
 - **Import** also reads CSV exports (Chosic, Exportify, TuneMyMusic, Soundiiz, Apple Music) and M3U playlists
 - Clearer buttons with icons: **Import** (.txt or .csv), **Chosic** (Spotify playlists), **Apple Music** (paste a link)
 
