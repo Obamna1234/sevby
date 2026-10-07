@@ -96,7 +96,7 @@ class Downloader(
         withContext(Dispatchers.IO) { index.mp3Count() }?.let {
             log("Save folder has $it MP3 file" + (if (it == 1) "" else "s") + " – songs already there are skipped")
         }
-        val savedNow = mutableSetOf<String>()   // saved during this run (e.g. a song listed twice)
+        val seen = SeenSongs()                  // songs met in this run (any capitals, typed or official name)
         val work = File(context.cacheDir, "work").apply { mkdirs() }
 
         fun fail(song: String, why: String) {
@@ -104,32 +104,62 @@ class Downloader(
             done(SongLine(song, Mark.FAILED, why))
         }
 
-        songLoop@ for ((i, song) in songs.withIndex()) {
+        /** True if a whole copy of [fileName] is in the folder; a cut-off leftover is deleted. */
+        suspend fun inFolder(fileName: String): Boolean {
+            val size = withContext(Dispatchers.IO) { index.sizeOf(fileName) } ?: return false
+            if (size >= MIN_MP3_BYTES) return true
+            log("  Found an incomplete copy – downloading again")
+            withContext(Dispatchers.IO) { runCatching { folder.findFile(fileName)?.delete() } }
+            return false
+        }
+
+        songLoop@ for ((i, typed) in songs.withIndex()) {
             waitWhilePaused()
             if (stopped) break
-            val name = SongList.safeFileName(song) + ".mp3"
-            status(i + 1, songs.size, song, null)
+            status(i + 1, songs.size, typed, null)
             step("Checking the folder…")
-            log("[${i + 1}/${songs.size}] $song")
+            log("[${i + 1}/${songs.size}] $typed")
 
-            // Already there? (checked by exact file name before downloading anything)
-            if (name.lowercase() in savedNow) {
+            // Listed twice (in any capitals)? Already there under the name as typed?
+            if (seen.contains(typed)) {
                 log("  SKIP (listed twice)")
                 skipped++
-                done(SongLine(song, Mark.SKIPPED, "listed twice"))
+                done(SongLine(typed, Mark.SKIPPED, "listed twice"))
                 continue
             }
-            val size = withContext(Dispatchers.IO) { index.sizeOf(name) }
-            if (size != null) {
-                if (size >= MIN_MP3_BYTES) {
+            if (inFolder(SongList.safeFileName(typed) + ".mp3")) {
+                seen.add(typed)
+                log("  SKIP (already downloaded)")
+                skipped++
+                done(SongLine(typed, Mark.SKIPPED, "already downloaded"))
+                continue
+            }
+
+            // The official spelling from iTunes ("kataklysm - black sheep" → "Kataklysm - The Black Sheep"),
+            // used for everything from here on: file name, checks, search, tags and log.
+            step("Looking up the song…")
+            val apple = withContext(Dispatchers.IO) { Itunes.lookup(typed) }
+            val song = Matching.officialName(typed, apple)
+            if (song != typed) {
+                log("  Official name: $song")
+                if (seen.contains(song)) {
+                    seen.add(typed)
+                    log("  SKIP (listed twice)")
+                    skipped++
+                    done(SongLine(song, Mark.SKIPPED, "listed twice"))
+                    continue
+                }
+                if (inFolder(SongList.safeFileName(song) + ".mp3")) {
+                    seen.add(typed, song)
                     log("  SKIP (already downloaded)")
                     skipped++
                     done(SongLine(song, Mark.SKIPPED, "already downloaded"))
                     continue
                 }
-                log("  Found an incomplete copy – downloading again")
-                withContext(Dispatchers.IO) { runCatching { folder.findFile(name)?.delete() } }
+                status(i + 1, songs.size, song, null)
             }
+            seen.add(typed, song)
+            val name = SongList.safeFileName(song) + ".mp3"
             val ctl = RunControl(
                 log = log,
                 onStart = { currentId = it },
@@ -137,13 +167,8 @@ class Downloader(
                 isStopped = { stopped || paused },
             )
 
-            // iTunes details (real length, album, cover): looked up once per song, when first needed.
-            var itunes: AlbumInfo? = null
-            var itunesLooked = false
-            suspend fun itunesInfo(): AlbumInfo? {
-                if (!itunesLooked) { itunesLooked = true; itunes = withContext(Dispatchers.IO) { Itunes.lookup(song) } }
-                return itunes
-            }
+            // iTunes details (real length, album, cover): already looked up above.
+            suspend fun itunesInfo(): AlbumInfo? = apple
 
             // ── 1. Bandcamp first (unless YouTube only, or Bandcamp kept blocking this run) ──
             var bcTrack: BcTrack? = null
@@ -205,14 +230,14 @@ class Downloader(
             }
             if (bcTrack != null && bcMp3 != null) {
                 step("Saving…")
-                when (withContext(Dispatchers.IO) { saveBandcamp(bcMp3, bcTrack, song, name, work) }) {
+                when (withContext(Dispatchers.IO) { saveBandcamp(bcMp3, bcTrack, song, name, work, apple) }) {
                     Saved.NEW -> {
-                        savedNow += name.lowercase(); ok++
+                        ok++
                         log("  OK (Bandcamp) → $name")
                         val album = bcTrack.album.ifEmpty { bcTrack.title }
                         done(SongLine(song, Mark.OK, "Bandcamp · $album" + (if (bcTrack.year.isNotEmpty()) " (${bcTrack.year})" else "")))
                     }
-                    Saved.ALREADY_THERE -> { savedNow += name.lowercase(); skipped++; done(SongLine(song, Mark.SKIPPED, "already downloaded")) }
+                    Saved.ALREADY_THERE -> { skipped++; done(SongLine(song, Mark.SKIPPED, "already downloaded")) }
                     Saved.FAILED -> fail(song, "couldn't save the file")
                 }
                 work.listFiles()?.forEach { it.deleteRecursively() }
@@ -263,13 +288,13 @@ class Downloader(
             step("Saving…")
             when (withContext(Dispatchers.IO) { save(got, song, name, album, work) }) {
                 Saved.NEW -> {
-                    savedNow += name.lowercase(); ok++
+                    ok++
                     log("  OK → $name")
                     val tagAlbum = album?.album?.takeIf { it.isNotEmpty() } ?: got.info?.optString("album")?.takeIf { it.isNotEmpty() }
                     done(SongLine(song, Mark.OK, "YouTube" + (tagAlbum?.let { " · $it" } ?: "") +
                         if (bandcampNote.isNotEmpty() && source == Source.BOTH) " ($bandcampNote)" else ""))
                 }
-                Saved.ALREADY_THERE -> { savedNow += name.lowercase(); skipped++; done(SongLine(song, Mark.SKIPPED, "already downloaded")) }
+                Saved.ALREADY_THERE -> { skipped++; done(SongLine(song, Mark.SKIPPED, "already downloaded")) }
                 Saved.FAILED -> fail(song, "couldn't save the file")
             }
             work.listFiles()?.forEach { it.deleteRecursively() }
@@ -279,9 +304,12 @@ class Downloader(
     }
 
     /** Tag a Bandcamp MP3 (Bandcamp's own album info and cover) and copy it into the folder. */
-    private fun saveBandcamp(mp3: File, t: BcTrack, song: String, name: String, work: File): Saved {
-        val (listArtist, title) = SongList.split(song)
-        val artist = tidyArtists(listArtist.ifEmpty { t.artist })
+    private fun saveBandcamp(mp3: File, t: BcTrack, song: String, name: String, work: File, apple: AlbumInfo? = null): Saved {
+        val (listArtist, typedTitle) = SongList.split(song)
+        val typedArtist = tidyArtists(listArtist.ifEmpty { t.artist })
+        // Apple's spelling when it's the same title/artist written differently.
+        val title = apple?.let { Matching.preferAppleTitle(typedTitle, it.title) } ?: typedTitle
+        val artist = apple?.let { Matching.preferAppleArtist(typedArtist, it.artistCanon) } ?: typedArtist
         val album = t.album.ifEmpty { t.title }            // a single is its own album
         val tags = Tags(
             title = title, artist = artist, albumArtist = artist, album = album, year = t.year,
@@ -357,7 +385,10 @@ class Downloader(
                     itunes.track > 0 -> "${itunes.track}"
                     else -> ""
                 }
-                return Tags(title = title, artist = artist, albumArtist = artist, album = itunes.album, year = itunes.year, track = track)
+                // Apple's spelling when it's the same title/artist written differently ("the black sheep" → "The Black Sheep").
+                val t = Matching.preferAppleTitle(title, itunes.title)
+                val a = Matching.preferAppleArtist(artist, itunes.artistCanon)
+                return Tags(title = t, artist = a, albumArtist = a, album = itunes.album, year = itunes.year, track = track)
             }
             val album = info?.optString("album").orEmpty()
             var year = ""

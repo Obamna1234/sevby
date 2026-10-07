@@ -91,10 +91,10 @@ object BandcampData {
         return account.isNotEmpty() && nameMatches(artistNames(artist), account)
     }
 
-    /** Same album, ignoring case, punctuation, accents and "(Remastered)"-style extras. */
+    /** Same album, ignoring case, punctuation, accents, a leading "The/A/An" and "(Remastered)"-style extras. */
     fun sameAlbum(a: String, b: String): Boolean {
-        val x = Matching.norm(Matching.cleanTitle(a))
-        return x.isNotEmpty() && x == Matching.norm(Matching.cleanTitle(b))
+        val x = Matching.titleKey(a)
+        return x.isNotEmpty() && x == Matching.titleKey(b)
     }
 
     /**
@@ -112,8 +112,8 @@ object BandcampData {
     /** True if [gotTitle] by [gotArtist] is the song asked for (same rules as the iTunes lookup). */
     fun isSameSong(song: String, gotTitle: String, gotArtist: String): Boolean {
         val (artist, title) = SongList.split(song)
-        val want = Matching.norm(Matching.cleanTitle(title))
-        val got = Matching.norm(Matching.cleanTitle(gotTitle))
+        val want = Matching.titleKey(title)
+        val got = Matching.titleKey(gotTitle)
         if (want.isEmpty() || got.isEmpty()) return false
         val wantArtists = artists(artist)
         if (wantArtists.isEmpty()) return false

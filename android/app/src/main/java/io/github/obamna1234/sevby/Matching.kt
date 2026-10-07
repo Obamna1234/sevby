@@ -103,6 +103,51 @@ object Matching {
     /** Lowercase letters and digits only, for comparing names ("M.A.D.E.S" = "mades", "&" = "and", "ó" = "o"). */
     fun norm(s: String): String = stripAccents(ampersand(s)).lowercase().filter { it.isLetterOrDigit() }
 
+    private val LEADING_ARTICLE = Regex("""^\s*(the|an|a)\s+""", RegexOption.IGNORE_CASE)
+
+    /**
+     * The key used whenever two song titles are compared: cleaned title, without a leading
+     * "The / A / An", letters and digits only. "Black Sheep" = "The Black Sheep" ≠ "Black Sheepdog".
+     */
+    fun titleKey(s: String): String = norm(cleanTitle(s).replace(LEADING_ARTICLE, ""))
+
+    /**
+     * Apple's spelling of a title for the tags, but only when it is the same title written differently
+     * (capitals, punctuation, a leading "The"); otherwise the title as typed. Never a different title.
+     */
+    fun preferAppleTitle(typed: String, appleTrackName: String): String {
+        if (appleTrackName.isBlank()) return typed
+        fun strict(s: String) = norm(s.replace(LEADING_ARTICLE, ""))
+        val canon = cleanTitle(appleTrackName)
+        return when (strict(typed)) {
+            strict(canon) -> canon
+            strict(appleTrackName) -> appleTrackName
+            else -> typed
+        }
+    }
+
+    /**
+     * The name used for the file, the checks, the tags and the log: Apple's "Artist - Title" (artistName and
+     * cleaned trackName) when both match what was typed apart from capitals, punctuation or a leading
+     * The/A/An; otherwise the line as typed. If iTunes found nothing, an all-lowercase line gets title case.
+     */
+    fun officialName(typed: String, apple: AlbumInfo?): String {
+        val (artist, title) = SongList.split(typed)
+        if (apple == null || artist.isEmpty()) return SongList.titleCaseIfLower(typed)
+        fun key(s: String) = norm(s.replace(LEADING_ARTICLE, ""))
+        if (apple.artist.isBlank() || key(artist) != key(apple.artist)) return typed
+        val appleTitle = when (key(title)) {
+            key(apple.titleCanon) -> apple.titleCanon
+            key(apple.title) -> apple.title
+            else -> return typed
+        }
+        return "${apple.artist} - $appleTitle"
+    }
+
+    /** Apple's spelling of the artist ("ac/dc" → "AC/DC") when the letters and digits are the same. */
+    fun preferAppleArtist(typed: String, appleArtist: String): String =
+        if (appleArtist.isNotBlank() && norm(typed) == norm(appleArtist)) appleArtist else typed
+
     /** "Sigur Rós" → "Sigur Ros", so lists typed without accents still match. */
     fun stripAccents(s: String): String =
         java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD).replace(Regex("""\p{Mn}+"""), "")
@@ -112,7 +157,7 @@ object Matching {
      * words with "&" read as "and". Used to drop YouTube results that are about something else.
      */
     fun titleShare(wantedTitle: String, candidate: String): Double {
-        val want = words(stripAccents(wantedTitle)).toSet()
+        val want = words(stripAccents(wantedTitle.replace(LEADING_ARTICLE, ""))).toSet()
         if (want.isEmpty()) return 1.0
         val got = words(stripAccents(candidate)).toSet()
         return (want intersect got).size.toDouble() / want.size

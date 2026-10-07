@@ -98,11 +98,11 @@ class MainActivity : AppCompatActivity() {
             }
             false
         }
-        setLabel(b.loadTxt, "Load .txt", null)
-        setLabel(b.chosic, "Open Chosic", "export to .txt")
-        setLabel(b.appleMusic, "Apple Music", "paste link")
+        setLabel(b.loadTxt, "Import .txt", "from your files")
+        setLabel(b.chosic, "Chosic website", "Spotify → .txt")
+        setLabel(b.appleMusic, "Apple Music", "paste link → list")
         b.loadTxt.setOnClickListener {
-            pickTxt.launch(arrayOf("text/*", "application/csv", "application/vnd.ms-excel"))
+            pickTxt.launch(arrayOf("text/*", "application/csv", "application/vnd.ms-excel", "audio/x-mpegurl", "audio/mpegurl", "application/vnd.apple.mpegurl"))
         }
         b.chosic.setOnClickListener { openChosic() }
         b.appleMusic.setOnClickListener { askAppleMusicLink() }
@@ -272,13 +272,14 @@ class MainActivity : AppCompatActivity() {
             val name = displayName(uri) ?: "Song list.txt"
             val text = try {
                 withContext(Dispatchers.IO) {
-                    contentResolver.openInputStream(uri)!!.use { it.readBytes().toString(Charsets.UTF_8) }
+                    contentResolver.openInputStream(uri)!!.use { SongList.decode(it.readBytes()) }
                 }
             } catch (e: Exception) {
                 toast("Could not read $name: ${e.message}")
                 return@launch
             }
-            b.songs.setText(text.removePrefix("﻿"))
+            // A CSV / M3U export becomes "Artist - Title" lines; anything else goes in as it is.
+            b.songs.setText(SongList.fromExport(text)?.joinToString("\n") ?: text)
             prefs.listName = SongList.safeFileName(name.substringBeforeLast('.'))
             toast("Loaded $name: ${songs().size} songs")
         }
@@ -648,7 +649,7 @@ class MainActivity : AppCompatActivity() {
                 .setMessage("This playlist has $total songs, but Apple Music's public web page only shows the first " +
                     "${list.songs.size}, so the last ${total - list.songs.size} aren't in the list.\n\n" +
                     "To get them too, split the playlist into smaller ones (about 100 songs each) in Apple Music, " +
-                    "or export it to a .txt file with another service and load that.")
+                    "or export it to a .txt file with another service and use Import .txt.")
                 .setPositiveButton("OK", null)
                 .show()
         }
@@ -662,7 +663,7 @@ class MainActivity : AppCompatActivity() {
         if (!ok) { Toast.makeText(this, "No browser found to open Chosic", Toast.LENGTH_LONG).show(); return }
         Toast.makeText(
             this,
-            "In Chosic: paste the Spotify playlist link, then copy or download the song list and paste or load it here",
+            "In Chosic: paste the Spotify playlist link, then copy or download the song list and paste it here or use Import .txt",
             Toast.LENGTH_LONG,
         ).show()
     }

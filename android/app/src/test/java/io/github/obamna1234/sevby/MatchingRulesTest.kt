@@ -180,7 +180,112 @@ class MatchingRulesTest {
         assertFalse(Matching.lengthMismatch(110.0, 120))                  // 10 s off → keep
     }
 
+    // ── Leading "The / A / An" doesn't matter when comparing titles ─────
+
+    @Test fun titleKeyIgnoresLeadingArticle() {
+        assertEquals(Matching.titleKey("The Black Sheep"), Matching.titleKey("Black Sheep"))
+        assertEquals(Matching.titleKey("A Race Against Time"), Matching.titleKey("race against time"))
+        assertFalse(Matching.titleKey("Black Sheep") == Matching.titleKey("Black Sheepdog"))
+        assertFalse(Matching.titleKey("Theme") == Matching.titleKey("me"))          // "The" only as a whole word
+    }
+
+    @Test fun itunesFindsTitleWithLeadingThe() {
+        val r = AlbumInfo("The Black Sheep", "Kataklysm", "Of Ghosts and Gods", "2015", 2, 10, 273, "")
+        val got = Itunes.choose(listOf(r), "kataklysm - black sheep")
+        assertNotNull(got)
+        assertEquals(273, got!!.seconds)                                           // 4:33 target length is known now
+        assertNull(Itunes.choose(listOf(r.copy(title = "Black Sheepdog")), "Kataklysm - Black Sheep"))
+    }
+
+    @Test fun bandcampMatchesTitleWithLeadingThe() {
+        val h = hit("The Black Sheep", "Kataklysm", "kataklysm", "Of Ghosts and Gods")
+        assertEquals(listOf(h), BandcampData.choose(listOf(h), "Kataklysm - Black Sheep"))
+    }
+
+    @Test fun youTubeFilterIgnoresLeadingArticle() {
+        assertEquals(1.0, Matching.titleShare("The Black Sheep", "Kataklysm - Black Sheep (Official Video)"), 0.0)
+        assertEquals(1.0, Matching.titleShare("Black Sheep", "Kataklysm - The Black Sheep"), 0.0)
+    }
+
+    // ── Proper capitals for all-lowercase lines, Apple's spelling for tags ──
+
+    @Test fun lowercaseLinesGetTitleCase() {
+        assertEquals("Kataklysm - The Black Sheep", SongList.titleCaseIfLower("kataklysm - the black sheep"))
+        assertEquals("The Weeknd - Blinding Lights", SongList.titleCaseIfLower("the weeknd - blinding lights"))
+        assertEquals("Simon & Garfunkel - The Sound of Silence", SongList.titleCaseIfLower("simon & garfunkel - the sound of silence"))
+        assertEquals("Metallica - Enter Sandman (Remastered)", SongList.titleCaseIfLower("metallica - enter sandman (remastered)"))
+        assertEquals("Guns N' Roses - Sweet Child O' Mine", SongList.titleCaseIfLower("guns n' roses - sweet child o' mine"))
+        assertEquals("Ac/Dc - Highway to Hell", SongList.titleCaseIfLower("ac/dc - highway to hell"))
+        assertEquals("Song – Title (The Remix)", SongList.titleCaseIfLower("song – title (the remix)"))
+    }
+
+    @Test fun linesWithCapitalsAreLeftAlone() {
+        assertEquals("PYLOT - a race against time", SongList.titleCaseIfLower("PYLOT - a race against time"))
+        assertEquals("deadmau5 - Strobe", SongList.titleCaseIfLower("deadmau5 - Strobe"))
+        // The list itself is kept as typed; the official name is worked out per song while downloading.
+        assertEquals(listOf("kataklysm - the black sheep", "Perturbator - Future Club"),
+            SongList.parse("kataklysm - the black sheep\nPerturbator - Future Club"))
+    }
+
+    @Test fun appleSpellingOnlyForTheSameTitleAndArtist() {
+        assertEquals("The Black Sheep", Matching.preferAppleTitle("the black sheep", "The Black Sheep"))
+        assertEquals("The Black Sheep", Matching.preferAppleTitle("Black Sheep", "The Black Sheep"))
+        assertEquals("Black Sheep", Matching.preferAppleTitle("Black Sheep", "Black Sheepdog"))           // different title: keep typed
+        assertEquals("The Night They Returned (Remastered)",
+            Matching.preferAppleTitle("the night they returned (remastered)", "The Night They Returned (Remastered)"))
+        assertEquals("Song (feat. X)", Matching.preferAppleTitle("Song (feat. X)", "Song"))               // never drop what was typed
+        assertEquals("AC/DC", Matching.preferAppleArtist("Ac/Dc", "AC/DC"))
+        assertEquals("Queen", Matching.preferAppleArtist("Queen", "Queen Mary Band"))
+        val apple = AlbumInfo("The Black Sheep (2015 Remaster)", "Kataklysm", "Of Ghosts and Gods", "2015", 2, 10, 273, "")
+        assertEquals("The Black Sheep", apple.titleCanon)
+        assertEquals("Kataklysm", apple.artistCanon)
+    }
+
     @Test fun accentsDoNotMatter() {
         assertEquals(Matching.norm("Sigur Ros"), Matching.norm("Sigur Rós"))
+    }
+
+    // ── Official name from iTunes (file name, checks, tags, log) ────────
+
+    private val blackSheep = AlbumInfo("The Black Sheep", "Kataklysm", "Of Ghosts and Gods", "2015", 2, 10, 273, "")
+
+    /** What the downloader does: iTunes lookup (mocked with one result), then the official name. */
+    private fun official(line: String, results: List<AlbumInfo> = listOf(blackSheep)) =
+        Matching.officialName(line, Itunes.choose(results, line))
+
+    @Test fun officialNameFromItunes() {
+        assertEquals("Kataklysm - The Black Sheep", official("kataklysm - black sheep"))
+        assertEquals("Kataklysm - The Black Sheep", official("KATAKLYSM - the BLACK sheep"))
+        assertEquals("Kataklysm - The Black Sheep", official("Kataklysm - The Black Sheep"))
+    }
+
+    @Test fun otherSongKeepsTypedName() {
+        // iTunes only knows a different song: keep the line exactly as typed.
+        assertEquals("kataklysm - other song", Matching.officialName("kataklysm - other song", blackSheep))
+        assertEquals("Kataklysm - Black Sheepdog", Matching.officialName("Kataklysm - Black Sheepdog", blackSheep))
+        assertEquals("Katatonia - The Black Sheep", Matching.officialName("Katatonia - The Black Sheep", blackSheep))
+    }
+
+    @Test fun nothingOnItunesTitleCasesLowercaseOnly() {
+        assertEquals("Kataklysm - Other Song", Matching.officialName("kataklysm - other song", null))
+        assertEquals("kataklysm - Other song", Matching.officialName("kataklysm - Other song", null))
+    }
+
+    @Test fun sameSongInOtherCapitalsIsListedTwice() {
+        val seen = SeenSongs()
+        val first = "kataklysm - black sheep"
+        seen.add(first, official(first))
+        val second = "KATAKLYSM - the BLACK sheep"
+        assertTrue(seen.contains(second) || seen.contains(official(second)))      // reported "listed twice"
+        assertTrue(seen.contains("Kataklysm - Black Sheep"))                      // same typed line, other capitals
+        assertFalse(seen.contains("Kataklysm - Other Song"))
+    }
+
+    @Test fun fileUnderTypedNameCountsAsDownloaded() {
+        val typed = "kataklysm - black sheep"
+        val inFolder = setOf("kataklysm - black sheep.mp3")                      // saved by an older version
+        // The downloader checks the typed name first (before the iTunes lookup), then the official one.
+        assertTrue(SongList.safeFileName(typed) + ".mp3" in inFolder)              // skipped, nothing downloaded
+        assertEquals("Kataklysm - The Black Sheep.mp3", SongList.safeFileName(official(typed)) + ".mp3")
     }
 }

@@ -20,7 +20,11 @@ data class AlbumInfo(
     val albumArtist: String = "",
     /** "2016-01-25T08:00:00Z" style; used to prefer the original release. */
     val releaseDate: String = "",
-)
+) {
+    /** Apple's own spelling, for the tags: the cleaned track name and the artist name. */
+    val titleCanon: String get() = Matching.cleanTitle(title)
+    val artistCanon: String get() = artist
+}
 
 object Itunes {
 
@@ -77,7 +81,7 @@ object Itunes {
     /** Pick the result that really is this song (artist and title must both match). */
     fun choose(results: List<AlbumInfo>, song: String): AlbumInfo? {
         val (artist, title) = SongList.split(song)
-        val wantTitle = Matching.norm(Matching.cleanTitle(title))
+        val wantTitle = Matching.titleKey(title)
         if (wantTitle.isEmpty()) return null
         val wantArtists = artist.split(Regex("""\s*(?:,|&|\bfeat\.?|\bft\.?|\bx\b|\band\b)\s*""", RegexOption.IGNORE_CASE))
             .map { Matching.norm(it) }.filter { it.isNotEmpty() }
@@ -85,7 +89,7 @@ object Itunes {
         val wantVariants = VARIANTS.filter { Matching.words(Matching.cleanTitle(title)).contains(it) }.toSet()
 
         return results.filter { r ->
-            val gotTitle = Matching.norm(Matching.cleanTitle(r.title))
+            val gotTitle = Matching.titleKey(r.title)
             val gotArtist = Matching.norm(r.artist)
             val titleOk = gotTitle == wantTitle
             val artistOk = gotArtist.isNotEmpty() && wantArtists.any { it in gotArtist || gotArtist in it }

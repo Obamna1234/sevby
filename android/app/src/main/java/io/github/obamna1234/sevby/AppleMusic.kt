@@ -54,7 +54,7 @@ object AppleMusic {
         if (list.songs.isEmpty()) {
             AmResult.Failed(
                 "Couldn't find any songs on that page. The playlist may be private, or Apple changed its page. " +
-                    "You can also export it to text with another service and paste or load it here."
+                    "You can also export it to text with another service and paste it here or use Import .txt."
             )
         } else {
             AmResult.Ok(list)
