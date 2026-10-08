@@ -31,8 +31,9 @@
 
 <table align="center">
 <tr>
-<td align="center"><img width="300" alt="SEVBY main screen" src="https://github.com/user-attachments/assets/4ad5b96a-ec6e-41ba-af0b-01ef6312ce06" /><br><em>SEVBY for Android (beta) downloading from an imported .txt file playlist</em></td>
-<td align="center"><img width="300" alt="SEVBY log after a download" src="https://github.com/user-attachments/assets/62146c58-6887-44ef-a0dc-13e8905e1ea2" /><br><em>SEVBY for Android (beta) About &amp; Updates window</em></td>
+<td align="center"><img width="250" alt="SEVBY importing a .txt playlist" src="https://github.com/user-attachments/assets/3e2426d5-14e5-4eea-8328-9047cf6a0596" /><br><em>SEVBY for Android (beta)<br>importing a .txt file playlist</em></td>
+<td align="center"><img width="250" alt="SEVBY downloading from an imported playlist" src="https://github.com/user-attachments/assets/59059085-c2f2-4a3b-8d99-0fb7766f69e3" /><br><em>SEVBY for Android (beta)<br>downloading from an imported .txt file playlist</em></td>
+<td align="center"><img width="250" alt="SEVBY About and Updates window" src="https://github.com/user-attachments/assets/d3125963-e9c7-48e0-92b7-fb39781eec21" /><br><em>SEVBY for Android (beta)<br>About &amp; Updates window</em></td>
 </tr>
 </table>
 
