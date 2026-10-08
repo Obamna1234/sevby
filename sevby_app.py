@@ -3597,7 +3597,6 @@ class SevbyApp(_SevbyBase):
         self._apply_icon(dlg)
         dlg.resizable(False, False)
         dlg.transient(self)
-        dlg.grab_set()
 
         w, h = 470, 480
         self.update_idletasks()
@@ -3654,7 +3653,27 @@ class SevbyApp(_SevbyBase):
         ctk.CTkButton(frame, text="OK", width=100, command=dlg.destroy).pack(
             pady=(14, 0)
         )
+        self._grab(dlg)
         dlg.focus_set()
+
+    def _grab(self, dlg):
+        """Make a dialog modal. On Linux (X11) grab_set fails if the window is not on screen yet, so wait for it
+        and never let a failed grab break the dialog."""
+        try:
+            dlg.update_idletasks()
+            dlg.wait_visibility()
+        except Exception:
+            pass
+        for _ in range(3):
+            try:
+                dlg.grab_set()
+                return
+            except Exception:
+                try:
+                    dlg.update()
+                    dlg.after(60)
+                except Exception:
+                    pass
 
     def load_txt(self):
         # Windows needs separate patterns so .txt files actually appear
@@ -3746,7 +3765,7 @@ class SevbyApp(_SevbyBase):
             else:
                 subprocess.Popen(["xdg-open", d])
         except Exception as e:
-            messagebox.showerror("Error", f"Could not open the folder:\n{e}")
+            messagebox.showinfo("SEVBY", f"Could not open a file manager here ({e}).\n\nYour songs are in:\n{d}")
 
     def _beep(self):
         try:
