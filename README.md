@@ -1,8 +1,8 @@
-***Beta: Linux/Mac builds untested. The Android app is new (beta).***
+***Beta: Windows is the best-tested build. Linux was lightly tested on Ubuntu (WSL2); macOS is untested. The Android app is new (beta).***
 
 # SEVBY: Playlist to MP3
 
-*Screenshots show the Windows version (last two images: Android). Linux and macOS builds are untested, so they may look slightly different.*
+*Screenshots show the Windows version (last two images: Android). Linux was tested on Ubuntu (via WSL2) and macOS is untested, so they may look slightly different.*
 
 <p align="center">
 <img width="760" height="929" alt="image" src="https://github.com/user-attachments/assets/12c0eaf7-1d8e-4cd7-9865-ce3a48851911" />
@@ -21,7 +21,7 @@
 
 <p align="center">
 <img width="759" height="929" alt="image" src="https://github.com/user-attachments/assets/1f9e483e-9f6e-4be8-93b8-c954c35b3306" />
-<br><em>SEVBY v1.0.1 exporting a Apple Music playlist URL to .txt &amp; automatically pasting into the text box</em>
+<br><em>SEVBY v1.0.1 exporting an Apple Music playlist URL to .txt &amp; automatically pasting into the text box</em>
 </p>
 
 <p align="center">
@@ -47,7 +47,7 @@ SEVBY looks for each song on **Bandcamp** first, and falls back to **YouTube** f
 |---|---|
 | **Windows** | Download `SEVBY-Windows.zip` from the **Releases** page, unzip it and run `SEVBY.exe` |
 | **Android** | Download the APK from the **SEVBY for Android** release on the Releases page (marked *Pre-release*; see [Android](#android) below) |
-| **Linux / macOS** | Download `SEVBY-Linux.zip` or `SEVBY-macOS.zip` from the Releases page (beta, untested), or run from source |
+| **Linux / macOS** | Download `SEVBY-Linux.zip` or `SEVBY-macOS.zip` from the Releases page (beta; Linux lightly tested, macOS untested), or run from source |
 | **Any computer** | Run from source with Python (see [Quick start](#quick-start)) |
 
 ## What it does
@@ -68,7 +68,7 @@ SEVBY looks for each song on **Bandcamp** first, and falls back to **YouTube** f
 
 ## Quick start
 
-Download the build for your system from the **Releases** page (`SEVBY-Windows.zip`, `SEVBY-Linux.zip` or `SEVBY-macOS.zip`), unzip it and run SEVBY. **Tested on Windows 10 (64-bit); Linux and macOS builds are untested.** On Linux or macOS you may need to make the file executable first (`chmod +x SEVBY`). Or run from source:
+Download the build for your system from the **Releases** page (`SEVBY-Windows.zip`, `SEVBY-Linux.zip` or `SEVBY-macOS.zip`), unzip it and run SEVBY. **Tested on Windows 10 (64-bit) and Ubuntu (via WSL2); macOS is untested.** On Linux or macOS you may need to make the file executable first (`chmod +x SEVBY`). Or run from source:
 
 ```bash
 pip install -r requirements.txt
