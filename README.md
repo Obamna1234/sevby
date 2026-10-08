@@ -193,7 +193,7 @@ An earlier version was scanned on VirusTotal: [scan of an earlier version](https
 SEVBY only downloads from Bandcamp and YouTube. It does not use torrents, file-sharing networks or ripping groups, and it will not be extended to. There are two reasons:
 
 - **Legal:** SEVBY is meant for music you own, that is free to download, or that the artist allows. Pirated copies are none of those.
-- **Safety:** files from unknown sources are a common way to spread malware, such as programs disguised as audio ("Song.flac.exe"), fake "codec" installers and tampered archives. SEVBY only saves audio files and tags them. It never runs a downloaded file as a program.
+- **Safety:** files from unknown sources are a common way to spread malware, such as programs disguised as audio ("Song.mp3.exe"), fake "codec" installers and tampered archives. SEVBY only saves audio files and tags them. It never runs a downloaded file as a program.
 
 This lowers the risk but doesn't remove it. Keep your antivirus and system up to date, and be careful with any music from sources you don't know.
 
