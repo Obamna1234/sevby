@@ -186,7 +186,7 @@ Full licence details: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 SEVBY is unsigned and built with PyInstaller, so some antivirus programs (e.g. AVG/Avast, Windows Defender) may flag or delay it as an unknown file. This is a common false positive for PyInstaller apps. The full source code is in this repo and the release files are built automatically by the GitHub Actions workflow. You can also run it from source (see Quick start).
 
-An earlier version was scanned on VirusTotal: [scan of an earlier version](https://www.virustotal.com/gui/file/348bacf093abe15f77455337616c0d77955364851724d54a4b4426fb94414a2c/detection). Every new build is a new file, so results can differ. If you want to check a download yourself, upload it to <https://www.virustotal.com>.
+VirusTotal scan of SEVBY v1.0.1 (Windows), 8 October 2026: [view the report](https://www.virustotal.com/gui/file/74e51215a985437684d0de81f249ec28744078b7cb0bf6e8407c19ebb8129220). At the time of the scan, 3 of 69 engines flagged it (generic detections from smaller vendors: Bkav Pro, McAfee Scanner and Zillya). Microsoft, Kaspersky, Sophos, Symantec, Malwarebytes, Trend Micro and the other major engines did not. This is a common false positive for PyInstaller programs. Scanners update their detections over time, so results can change. The report is for that exact file: every new build is a new file, so if the download on the Releases page has been rebuilt since, its result can differ. To check a download yourself, upload it to <https://www.virustotal.com>.
 
 ## Where the music comes from (and what SEVBY does not do)
 
