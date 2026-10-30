@@ -38,6 +38,12 @@ FFmpeg is a trademark of Fabrice Bellard. SEVBY includes an unmodified FFmpeg bu
 - **Windows build:** FFmpeg git build 2026-10-01 (essentials) from gyan.dev, https://www.gyan.dev/ffmpeg/builds/ . This build is licensed under the GNU GPL v3 (it was configured with --enable-gpl --enable-version3). Source code: https://ffmpeg.org/download.html#get-sources and the source link on the gyan.dev builds page.
 - **Linux and macOS builds:** static FFmpeg binaries fetched by the build workflow (FedericoCarboni/setup-ffmpeg). Their licences and sources are listed on the download pages linked from that project.
 
+## Also bundled in the desktop builds
+
+- **Deno** (MIT licence, https://github.com/denoland/deno): the JavaScript engine yt-dlp uses for YouTube's challenges. The build workflow downloads the official release and checks its SHA-256 before bundling it.
+- **yt-dlp-ejs** (part of yt-dlp's `[default]` extras, https://github.com/yt-dlp/ejs): YouTube challenge scripts for yt-dlp.
+- **keyring** (MIT licence, https://github.com/jaraco/keyring): stores the Spotify login in Windows Credential Manager / macOS Keychain / Linux Secret Service instead of a text file.
+
 ## Services (not bundled, not affiliated)
 
 SEVBY talks to these services but is not affiliated with, endorsed by, or sponsored by any of them. Their names and trademarks belong to their owners.
@@ -46,4 +52,4 @@ SEVBY talks to these services but is not affiliated with, endorsed by, or sponso
 - **Bandcamp**: public track pages.
 - **YouTube / Google**: public videos.
 - **Apple iTunes Search API**: public search, used only to look up album name, year, track number and cover for a song when Bandcamp doesn't provide them. Not affiliated with Apple.
-- **GitHub**: the "About & updates" screen asks GitHub for the newest yt-dlp release and, if you press Update, downloads that file from the official yt-dlp releases page into your user folder.
+- **GitHub**: the "About & updates" screen asks GitHub for the newest yt-dlp release and, if you press Update, downloads that file from the official yt-dlp releases page into your user folder. It is only installed if it matches the SHA-256 checksum yt-dlp publishes with the release (SHA2-256SUMS).
