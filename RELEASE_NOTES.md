@@ -1,13 +1,11 @@
-## What's new in v1.0.2 (security hardening)
+## What's new in v1.0.3
 
-Small, behaviour-preserving security fixes from the October 2026 code review. **No feature changes.**
+This release bundles **every operating system in one place** — the Windows, Linux and macOS builds **and**
+the Android APK are all attached below. (Previously the Android build was a separate release.)
 
-- Download engine: a crafted or tampered search result can no longer slip options into the downloader
-  (yt-dlp option-injection guard + URL validation).
-- Your config file (`~/.sevby_config.json`) is kept private to your user account.
-- Temporary cover/thumbnail files use unpredictable names.
-
-No critical or high-severity issues were found. See `SECURITY.md`. Earlier releases remain available as fallbacks.
+No app changes from v1.0.2 beyond that; it carries the same October 2026 security hardening
+(yt-dlp option-injection guard + URL validation, private config file, unpredictable temp files).
+Earlier releases remain as fallbacks.
 
 ---
 
@@ -15,8 +13,7 @@ No critical or high-severity issues were found. See `SECURITY.md`. Earlier relea
 
 Everything is included (downloader engine, ffmpeg); nothing else to install.
 
-1. Under **Assets** below, download the file for your system:
-   **SEVBY-Windows.zip**, **SEVBY-Linux.zip**, or **SEVBY-macOS.zip**.
+1. Under **Assets** below, download **SEVBY-Windows.zip**, **SEVBY-Linux.zip**, or **SEVBY-macOS.zip**.
 2. Extract it and run the **SEVBY** program inside.
    - Windows: if SmartScreen warns, **More info → Run anyway** (the app isn't code-signed yet).
    - macOS: right-click → **Open** the first time to get past Gatekeeper.
@@ -24,5 +21,6 @@ Everything is included (downloader engine, ffmpeg); nothing else to install.
 
 ## Install (Android)
 
-Download **SEVBY-Android.apk** from the Android release (tagged `android-v…`), open it, allow installing
-unknown apps if prompted, then **Install**. Allow music/audio and notifications on first launch.
+Under **Assets** below, download the APK for your phone — **`SEVBY-…-arm64-v8a.apk`** for most phones
+(or `…-universal.apk` if unsure). Open it, allow installing unknown apps if prompted, then **Install**.
+Allow music/audio and notifications on first launch.

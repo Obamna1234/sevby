@@ -143,7 +143,43 @@ jobs:
             (cd "$d" && zip -r -q "../../$name.zip" .)
           done
           ls -l *.zip
-      - name: Create the release
+      - uses: actions/setup-java@v4
+        if: steps.decide.outputs.go == 'true'
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        if: steps.decide.outputs.go == 'true'
+      - name: Load Android signing key (if set)
+        if: steps.decide.outputs.go == 'true'
+        env:
+          SEVBY_KEYSTORE_BASE64: ${{ secrets.SEVBY_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$SEVBY_KEYSTORE_BASE64" ]; then
+            echo "$SEVBY_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/sevby.jks"
+            echo "SEVBY_KEYSTORE=$RUNNER_TEMP/sevby.jks" >> "$GITHUB_ENV"
+          else
+            echo "::warning::No SEVBY_KEYSTORE_BASE64 secret - the Android APK is left out of this release."
+          fi
+      - name: Build signed Android APK (for the all-OS release)
+        if: steps.decide.outputs.go == 'true' && env.SEVBY_KEYSTORE != ''
+        working-directory: android
+        env:
+          SEVBY_KEYSTORE_PASSWORD: ${{ secrets.SEVBY_KEYSTORE_PASSWORD }}
+          SEVBY_KEY_ALIAS: ${{ secrets.SEVBY_KEY_ALIAS }}
+          SEVBY_KEY_PASSWORD: ${{ secrets.SEVBY_KEY_PASSWORD }}
+          SEVBY_VERSION_NAME: ${{ steps.decide.outputs.version }}
+          SEVBY_VERSION_CODE: ${{ github.run_number }}
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleRelease
+          mkdir -p ../apks
+          for f in app/build/outputs/apk/release/*.apk; do
+            abi=$(basename "$f" | sed -E 's/^app-(.*)-release(-unsigned)?\.apk$/\1/')
+            cp "$f" "../apks/SEVBY-${SEVBY_VERSION_NAME}-${abi}.apk"
+          done
+          ls -l ../apks
+      - name: Create the release (all OS)
         if: steps.decide.outputs.go == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -151,6 +187,8 @@ jobs:
         run: |
           V="${{ steps.decide.outputs.version }}"
           [ -f RELEASE_NOTES.md ] || printf 'SEVBY v%s\n' "$V" > RELEASE_NOTES.md
+          files=(SEVBY-Windows.zip SEVBY-Linux.zip SEVBY-macOS.zip)
+          shopt -s nullglob
+          for a in apks/*.apk; do files+=("$a"); done
           gh release create "v$V" --target "$GITHUB_SHA" --title "SEVBY v$V" \
-            --notes-file RELEASE_NOTES.md \
-            SEVBY-Windows.zip SEVBY-Linux.zip SEVBY-macOS.zip
+            --notes-file RELEASE_NOTES.md "${files[@]}"
