@@ -20,6 +20,21 @@ were then made here (SEVBY HQ got the same ones). If you build on SEVBY later, k
 Not changed: the Android app (it updates yt-dlp through youtubedl-android) and the signing setup (already in
 GitHub secrets). No secrets are committed in this repository.
 
+## Follow-up hardening (31 October 2026)
+
+A second pass added small, behaviour-preserving fixes (same ones applied to SEVBY HQ):
+
+1. **yt-dlp option-injection guard.** `_run_ytdlp_cli()` now places a `--` end-of-options marker before the
+   target URL, and `fix_bc_url()` rejects any value that isn't a normal `http(s)://` URL. A crafted or
+   tampered Bandcamp result whose URL began with `-` can no longer be read by yt-dlp as an option
+   (CWE-88). Normal downloads are unchanged.
+2. **Config file is user-private.** `save_config()` now sets `~/.sevby_config.json` to `0600` after writing
+   (CWE-276). No effect on Windows; harmless there.
+3. **Unpredictable temp file names.** Cover/thumbnail temp files now use a random token instead of the
+   process id, removing the predictable-path/symlink risk in a shared temp directory (CWE-377).
+
+These are low/medium-severity hardening items; no critical or high issues were found in the review.
+
 ## Reporting a problem
 
 Open an issue on GitHub (without personal data), or contact the repository owner.
