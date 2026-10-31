@@ -8,6 +8,7 @@ on:
         type: boolean
         default: false
   push:
+    branches: ["main"]
     tags: ["v*"]
   schedule:
     - cron: "0 3 1 * *"   # 1st of every month, 03:00 UTC
@@ -108,37 +109,48 @@ jobs:
           printf '\nLast automatic rebuild: %s (with the newest yt-dlp at that time)\n' "$(date -u +%F)" >> notes.md
           gh release edit "$tag" --notes-file notes.md
 
-  # On a pushed desktop tag (v1.2.3): publish a GitHub Release for that tag with the three
-  # desktop builds attached, using RELEASE_NOTES.md as the body. Skipped if any build failed.
+  # On a push to main where the app's VERSION has no release yet: publish a GitHub Release
+  # tagged v<VERSION> with the three desktop builds attached, using RELEASE_NOTES.md as the body.
+  # (CI creates the tag + release; mirrors the Sevbify flow.) Skipped if any build failed.
   release:
     needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
+      - name: Decide whether to release (new VERSION, no existing tag)
+        id: decide
+        run: |
+          V=$(grep -m1 '^VERSION = ' sevby_app.py | sed 's/.*"\(.*\)".*/\1/')
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          if git ls-remote --tags origin "refs/tags/v$V" | grep -q .; then
+            echo "go=false" >> "$GITHUB_OUTPUT"
+            echo "v$V already released - nothing to do"
+          else
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v4
+        if: steps.decide.outputs.go == 'true'
         with:
           path: artifacts
       - name: Zip each build
+        if: steps.decide.outputs.go == 'true'
         run: |
           for d in artifacts/SEVBY-*; do
             name=$(basename "$d")
             (cd "$d" && zip -r -q "../../$name.zip" .)
           done
           ls -l *.zip
-      - name: Create the release (only if it doesn't exist yet)
+      - name: Create the release
+        if: steps.decide.outputs.go == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
-          tag="${GITHUB_REF_NAME}"
-          [ -f RELEASE_NOTES.md ] || printf 'SEVBY %s\n' "$tag" > RELEASE_NOTES.md
-          if gh release view "$tag" >/dev/null 2>&1; then
-            echo "Release $tag already exists; attaching binaries."
-            gh release upload "$tag" SEVBY-Windows.zip SEVBY-Linux.zip SEVBY-macOS.zip --clobber
-          else
-            gh release create "$tag" --title "SEVBY $tag" --notes-file RELEASE_NOTES.md \
-              SEVBY-Windows.zip SEVBY-Linux.zip SEVBY-macOS.zip
-          fi
+          V="${{ steps.decide.outputs.version }}"
+          [ -f RELEASE_NOTES.md ] || printf 'SEVBY v%s\n' "$V" > RELEASE_NOTES.md
+          gh release create "v$V" --target "$GITHUB_SHA" --title "SEVBY v$V" \
+            --notes-file RELEASE_NOTES.md \
+            SEVBY-Windows.zip SEVBY-Linux.zip SEVBY-macOS.zip
