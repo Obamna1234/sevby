@@ -1,0 +1,47 @@
+name: Key backup (one-off)
+on:
+  push:
+    branches: ["keys-backup"]
+permissions:
+  contents: read
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check passphrase is set
+        env:
+          PASS: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          [ -n "$PASS" ] || { echo "::error::Add a BACKUP_PASSPHRASE repo secret first."; exit 1; }
+      - name: Assemble backup
+        env:
+          B64: ${{ secrets.SEVBY_KEYSTORE_BASE64 }}
+          ALIAS: ${{ secrets.SEVBY_KEY_ALIAS }}
+          SPW: ${{ secrets.SEVBY_KEYSTORE_PASSWORD }}
+          KPW: ${{ secrets.SEVBY_KEY_PASSWORD }}
+        run: |
+          mkdir -p backup
+          printf '%s' "$B64" | base64 -d > backup/sevby.jks
+          printf '%s\n' "$B64" > backup/sevby.jks.b64
+          if [ ! -s backup/sevby.jks ]; then echo "::error::SEVBY_KEYSTORE_BASE64 secret is empty or invalid."; exit 1; fi
+          {
+            echo "Repo: Obamna1234/sevby   (Android signing key)"
+            echo "SEVBY_KEY_ALIAS=$ALIAS"
+            echo "SEVBY_KEYSTORE_PASSWORD=$SPW"
+            echo "SEVBY_KEY_PASSWORD=$KPW"
+            echo "SEVBY_KEYSTORE_BASE64 = the single line in sevby.jks.b64"
+          } > backup/values.txt
+          echo "keystore bytes: $(wc -c < backup/sevby.jks)"
+      - name: Encrypt into password-locked .7z
+        env:
+          PASS: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq p7zip-full
+          7z a -p"$PASS" -mhe=on sevby-key-backup.7z ./backup/* >/dev/null
+          echo "done"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sevby-key-backup
+          path: sevby-key-backup.7z
+          retention-days: 1
+          if-no-files-found: error
