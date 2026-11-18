@@ -34,4 +34,15 @@ for apk in "${apks[@]}"; do
   mv "$out" "$apk"
 done
 rm -f "$apk.idsig" "$dir"/*.idsig 2>/dev/null || true
+# Double-check: Android 9+ must see the new key, Android 7-8 the original one; otherwise fail the build.
+cert_sha() { keytool -exportcert -keystore "$1" -alias "$2" -storepass "$3" | sha256sum | cut -d' ' -f1; }
+want_new=$(cert_sha "$NEW_KEYSTORE" "$NEW_KEY_ALIAS" "$NEW_KEYSTORE_PASSWORD")
+want_old=$(cert_sha "$OLD_KEYSTORE" "$OLD_KEY_ALIAS" "$OLD_KEYSTORE_PASSWORD")
+for apk in "${apks[@]}"; do
+  "$signer" verify --print-certs --min-sdk-version 28 "$apk" | grep -qi "$want_new" \
+    || { echo "::error::$apk: Android 9+ would not see the new key"; exit 1; }
+  "$signer" verify --print-certs --min-sdk-version 24 --max-sdk-version 27 "$apk" | grep -qi "$want_old" \
+    || { echo "::error::$apk: Android 7-8 would not see the original key"; exit 1; }
+done
+echo "Key rotation checked: new key for Android 9+, original key for Android 7-8."
 echo "Key rotation: ${#apks[@]} APK(s) signed with the original key (Android 7-8) and the new key (Android 9+)."
