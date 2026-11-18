@@ -161,10 +161,15 @@ jobs:
         if: steps.decide.outputs.go == 'true'
         env:
           SEVBY_KEYSTORE_BASE64: ${{ secrets.SEVBY_KEYSTORE_BASE64 }}
+          NEWKEY_BASE64: ${{ secrets.SEVBY_NEWKEY_BASE64 }}
         run: |
           if [ -n "$SEVBY_KEYSTORE_BASE64" ]; then
             echo "$SEVBY_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/sevby.jks"
             echo "SEVBY_KEYSTORE=$RUNNER_TEMP/sevby.jks" >> "$GITHUB_ENV"
+            if [ -n "$NEWKEY_BASE64" ]; then
+              echo "$NEWKEY_BASE64" | base64 -d > "$RUNNER_TEMP/sevby-new.jks"
+              echo "NEW_KEYSTORE=$RUNNER_TEMP/sevby-new.jks" >> "$GITHUB_ENV"
+            fi
           else
             echo "::warning::No SEVBY_KEYSTORE_BASE64 secret - the Android APK is left out of this release."
           fi
@@ -176,9 +181,15 @@ jobs:
           SEVBY_KEY_ALIAS: ${{ secrets.SEVBY_KEY_ALIAS }}
           SEVBY_KEY_PASSWORD: ${{ secrets.SEVBY_KEY_PASSWORD }}
           SEVBY_VERSION_NAME: ${{ steps.decide.outputs.version }}
+          NEW_KEY_ALIAS: ${{ secrets.SEVBY_NEWKEY_ALIAS }}
+          NEW_KEYSTORE_PASSWORD: ${{ secrets.SEVBY_NEWKEY_PASSWORD }}
         run: |
           chmod +x gradlew
           ./gradlew --no-daemon assembleRelease
+          # Key rotation (Nov 2026): original key for Android 7-8, new key + proof for Android 9+
+          OLD_KEYSTORE="$SEVBY_KEYSTORE" OLD_KEY_ALIAS="$SEVBY_KEY_ALIAS" \
+          OLD_KEYSTORE_PASSWORD="$SEVBY_KEYSTORE_PASSWORD" OLD_KEY_PASSWORD="$SEVBY_KEY_PASSWORD" \
+            bash sign-rotated.sh app/build/outputs/apk/release
           mkdir -p ../apks
           for f in app/build/outputs/apk/release/*.apk; do
             abi=$(basename "$f" | sed -E 's/^app-(.*)-release(-unsigned)?\.apk$/\1/')
