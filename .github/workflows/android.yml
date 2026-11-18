@@ -44,7 +44,7 @@ jobs:
             V=$(grep -m1 '^VERSION = ' ../sevby_app.py | sed 's/.*"\(.*\)".*/\1/')
             core=${V%%-*}; IFS=. read -r a b c <<< "$core"
             next="$a.$b.$((c + 1))"
-            echo "SEVBY_VERSION_NAME=${next}-dev.$((GITHUB_RUN_NUMBER % 200))" >> "$GITHUB_ENV"
+            echo "SEVBY_VERSION_NAME=${next}-dev.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
           fi
 
       - name: Signing key (from repo secrets, if set)
