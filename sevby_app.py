@@ -175,25 +175,65 @@ def secret_set(name: str, value: str) -> None:
         pass
 
 
-def load_config() -> dict:
+_CONFIG_LOCK = threading.RLock()   # the window, the worker and the update checks all save settings
+
+
+class _Config(dict):
+    """Settings as loaded; remembers what they were, so saving only applies what this caller changed."""
+    _orig: dict = {}
+
+
+def _read_config_file() -> dict:
     if CONFIG_PATH.exists():
         try:
-            return json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+            data = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+            return data if isinstance(data, dict) else {}
         except Exception:
             pass
     return {}
 
 
+def load_config() -> dict:
+    with _CONFIG_LOCK:
+        cfg = _Config(_read_config_file())
+        cfg._orig = json.loads(json.dumps(cfg))
+        return cfg
+
+
 def save_config(data: dict) -> None:
-    try:
-        CONFIG_PATH.write_text(json.dumps(data, indent=2), encoding="utf-8")
-        # Make the file private to the current user (no-op effect on Windows, harmless).
+    """Save settings. Only the keys this caller changed since load_config() are applied to what is on disk
+    now, so the window, the worker and the update checks can't undo each other's changes. Written in one
+    go (temp file + rename), private to this user from the start, so it can never be left half-written."""
+    with _CONFIG_LOCK:
+        if isinstance(data, _Config):
+            out = _read_config_file()
+            orig = data._orig
+            for k in set(orig) | set(data):
+                if k not in data:
+                    out.pop(k, None)
+                elif k not in orig or data[k] != orig[k]:
+                    out[k] = data[k]
+            data._orig = json.loads(json.dumps(dict(data)))
+        else:
+            out = dict(data)
+        if isinstance(out.get("queue"), list):   # Spotify secrets live in the password store, never here
+            out["queue"] = [{k: v for k, v in j.items() if k != "secret"} if isinstance(j, dict) else j
+                            for j in out["queue"]]
+        tmp = CONFIG_PATH.with_name(f"{CONFIG_PATH.name}.{uuid.uuid4().hex}.tmp")
         try:
-            os.chmod(CONFIG_PATH, 0o600)
-        except OSError:
-            pass
-    except Exception:
-        pass
+            fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                f.write(json.dumps(out, indent=2))
+            os.replace(tmp, CONFIG_PATH)
+            try:
+                os.chmod(CONFIG_PATH, 0o600)
+            except OSError:
+                pass
+        except Exception:
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
 
 
 # \u2500\u2500 Bandcamp search \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
@@ -968,8 +1008,9 @@ def fetch_apple_playlist(url: str) -> tuple[str, list[str]]:
     """(name, ['Artist - Title', ...]) for a shared Apple Music playlist or album link.
     Only works for links anyone can open (Share > Copy Link). Raises ValueError with a plain message."""
     url = (url or "").strip().split()[0] if (url or "").strip() else ""
-    if "music.apple.com" not in url.lower():
-        raise ValueError("That doesn't look like an Apple Music link (it should contain music.apple.com).")
+    host = (urllib.parse.urlsplit(url).hostname or "").lower()
+    if not url.lower().startswith("https://") or not (host == "music.apple.com" or host.endswith(".music.apple.com")):
+        raise ValueError("That doesn't look like an Apple Music link (it should start with https://music.apple.com).")
     url = re.sub(r"//embed\.music\.apple\.com", "//music.apple.com", url, flags=re.I)
     req = urllib.request.Request(url, headers={
         "User-Agent": BROWSER_UA, "Accept-Language": "en-US,en;q=0.9",
@@ -977,7 +1018,7 @@ def fetch_apple_playlist(url: str) -> tuple[str, list[str]]:
     })
     try:
         with urllib.request.urlopen(req, timeout=25) as resp:
-            html = resp.read().decode("utf-8", errors="replace")
+            html = resp.read(20 * 1024 * 1024).decode("utf-8", errors="replace")
     except urllib.error.HTTPError as e:
         raise ValueError(f"Apple Music said no (HTTP {e.code}). Is the playlist public (Share > Copy Link)?")
     except Exception as e:
@@ -1025,10 +1066,20 @@ def ytdlp_age_days() -> int | None:
         return None
 
 
+_WIN_RESERVED = {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)), *(f"LPT{i}" for i in range(1, 10))}
+
+
 def sanitize_filename(name: str) -> str:
     name = re.sub(r'[<>:"/\\|?*]', "", name)
-    name = re.sub(r"\s+", " ", name).strip()
-    return name[:180]
+    name = re.sub(r"[\x00-\x1f\x7f]", " ", name)          # control characters (Windows refuses them)
+    name = re.sub(r"\s+", " ", name).strip()[:180]
+    # Most systems allow 255 *bytes* per name; leave room for ".sevby-tmp.flac" / ".webm.part".
+    while len(name.encode("utf-8")) > 200:
+        name = name[:-1]
+    name = name.rstrip(". ")                                 # Windows drops trailing dots and spaces
+    if name.split(".")[0].upper() in _WIN_RESERVED:          # CON, NUL, COM1 ... are devices on Windows
+        name = "_" + name
+    return name
 
 
 def have_ytdlp() -> bool:
@@ -1155,10 +1206,42 @@ def _thumb_urls(info: dict | None) -> list[str]:
     return urls[:5]
 
 
+_TEMP = threading.local()
+MAX_IMAGE_BYTES = 15 * 1024 * 1024
+
+
+def _temp_path(prefix: str, ext: str) -> str:
+    """A new, unguessable temp file name; remembered so it is deleted when the song is done."""
+    path = os.path.join(tempfile.gettempdir(), f"{prefix}_{uuid.uuid4().hex}{ext}")
+    if not hasattr(_TEMP, "files"):
+        _TEMP.files = []
+    _TEMP.files.append(path)
+    return path
+
+
+def _cleanup_temp() -> None:
+    for path in getattr(_TEMP, "files", []):
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+    _TEMP.files = []
+
+
+def _read_image(url: str) -> bytes | None:
+    """A cover picture from the web: https only, at most 15 MB."""
+    if not str(url or "").lower().startswith("https://"):
+        return None
+    req = urllib.request.Request(url, headers={"User-Agent": SIMPLE_UA})
+    with urllib.request.urlopen(req, timeout=20) as resp:
+        data = resp.read(MAX_IMAGE_BYTES + 1)
+    return data if len(data) <= MAX_IMAGE_BYTES else None
+
+
 def _to_jpg(src: str) -> str | None:
     if src.lower().endswith((".jpg", ".jpeg")):
         return src
-    dst = os.path.join(tempfile.gettempdir(), f"sevby_cover_{uuid.uuid4().hex}.jpg")
+    dst = _temp_path("sevby_cover", '.jpg')
     r = _run_ff(["-y", "-i", src, "-q:v", "2", dst])
     return dst if r is not None and r.returncode == 0 and os.path.isfile(dst) else None
 
@@ -1172,15 +1255,15 @@ def _find_or_fetch_cover(out_dir: str, safe: str, info: dict | None) -> str | No
                 return jpg
     for url in _thumb_urls(info):
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": SIMPLE_UA})
-            with urllib.request.urlopen(req, timeout=20) as resp:
-                data = resp.read()
+            data = _read_image(url)
         except Exception:
+            continue
+        if not data:
             continue
         if len(data) < 1000:
             continue
         ext = ".webp" if data[:4] == b"RIFF" else (".png" if data[:8] == b"\x89PNG\r\n\x1a\n" else ".jpg")
-        tmp = os.path.join(tempfile.gettempdir(), f"sevby_thumb_{uuid.uuid4().hex}{ext}")
+        tmp = _temp_path("sevby_thumb", ext)
         try:
             with open(tmp, "wb") as f:
                 f.write(data)
@@ -1296,16 +1379,14 @@ def _run_ytdlp_cli(
     ]
     if embed:
         cmd += ["--embed-thumbnail", "--embed-metadata", "--convert-thumbnails", "jpg"]
-    cmd += [
-        # "--" marks the end of options so a URL that begins with "-" can never be
-        # parsed as a yt-dlp flag (defence against a crafted/MITM'd source URL).
-        "-o", out_template, "--", target,
-    ]
     loc = _ffmpeg_location()
     if loc:
         cmd.extend(["--ffmpeg-location", loc])
     if cookies:
         cmd.extend(["--cookies-from-browser", "chrome"])
+    # "--" ends the options so a URL that begins with "-" can never be read as a yt-dlp flag.
+    # It must come last: yt-dlp reads everything after it as a URL.
+    cmd += ["-o", out_template, "--", target]
     flags = 0x08000000 if os.name == "nt" else 0  # CREATE_NO_WINDOW
     try:
         r = subprocess.run(
@@ -1399,7 +1480,7 @@ def _crop_box(src: str) -> tuple[int, int, int, int, int, int] | None:
 def _square_jpg(src: str) -> str | None:
     """Make a square cover from a video thumbnail: trim black bars that are the same on both sides,
     then crop the centre square if the picture is nearly square, else show it whole on a black square."""
-    dst = os.path.join(tempfile.gettempdir(), f"sevby_square_{uuid.uuid4().hex}.jpg")
+    dst = _temp_path("sevby_square", '.jpg')
     vf = []
     box = _crop_box(src)
     cw = ch = None
@@ -1431,15 +1512,15 @@ def _square_jpg(src: str) -> str | None:
 
 def _fetch_image(url: str) -> str | None:
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": SIMPLE_UA})
-        with urllib.request.urlopen(req, timeout=20) as resp:
-            data = resp.read()
+        data = _read_image(url)
     except Exception:
+        return None
+    if not data:
         return None
     if len(data) < 1000:
         return None
     ext = ".png" if data[:8] == b"\x89PNG\r\n\x1a\n" else (".webp" if data[:4] == b"RIFF" else ".jpg")
-    tmp = os.path.join(tempfile.gettempdir(), f"sevby_cover_dl_{uuid.uuid4().hex}{ext}")
+    tmp = _temp_path("sevby_cover_dl", ext)
     try:
         with open(tmp, "wb") as f:
             f.write(data)
@@ -2218,6 +2299,14 @@ def _src_result(res: dict) -> str:
 
 
 def process_song(song: str, out_dir: str, opts: dict, state: dict, say, step=lambda _t: None) -> dict:
+    """One song, start to finish (see _process_song); its temporary cover images are always removed."""
+    try:
+        return _process_song(song, out_dir, opts, state, say, step)
+    finally:
+        _cleanup_temp()
+
+
+def _process_song(song: str, out_dir: str, opts: dict, state: dict, say, step=lambda _t: None) -> dict:
     """One song, start to finish. Used by the window and the command-line version.
     opts: use_bc, use_yt, free.  state: seen (set), bc_errors (int), bandcamp_down (bool).
     Returns {'status': ok|skip|dup|fail, 'source': ..., 'note': ..., 'path': ...}."""
@@ -3131,7 +3220,10 @@ class SevbyApp(_SevbyBase):
                 APP_NAME, "Your browser will download the new version. Updating means closing SEVBY, which "
                           "stops a download in progress. Resume carries on afterwards. Continue?"):
             return
-        webbrowser.open(rel.get("url") or rel.get("page") or APP_REPO_URL + "/releases")
+        link = rel.get("url") or rel.get("page") or ""
+        if not link.startswith(APP_REPO_URL + "/"):            # only this project's own GitHub pages
+            link = APP_REPO_URL + "/releases"
+        webbrowser.open(link)
 
     def _show_banner(self, latest: str):
         self.banner_label.configure(text=f"A newer yt-dlp ({latest}) is available")
@@ -4196,7 +4288,7 @@ class SevbyApp(_SevbyBase):
                     return
                 self.log(f"Using {len(songs)} songs from list/file.")
             else:
-                url, cid, secret = job["url"], job["cid"], job["secret"]
+                url, cid, secret = job["url"], job["cid"], job.get("secret") or secret_get("client_secret")
                 if not url or "spotify" not in url.lower():
                     self._job_error(job, "Enter a valid Spotify playlist URL.")
                     return
