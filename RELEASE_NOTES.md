@@ -1,11 +1,12 @@
-## What's new in v1.0.3
+## What's new in v1.0.4
 
-This release bundles **every operating system in one place** — the Windows, Linux and macOS builds **and**
-the Android APK are all attached below. (Previously the Android build was a separate release.)
+**Android**
+- The update banner and **About & updates** now check GitHub again before downloading, so they always offer the newest version (before, they could offer an older one for up to a day and fail with "App not installed").
+- The app now finds updates in these all-in-one releases too, not only in the old Android-only ones.
+- Everything from Android 1.0.0-beta.5: better matching, official song names from Apple, CSV / M3U import, a second YouTube search, clearer buttons.
 
-No app changes from v1.0.2 beyond that; it carries the same October 2026 security hardening
-(yt-dlp option-injection guard + URL validation, private config file, unpredictable temp files).
-Earlier releases remain as fallbacks.
+**Windows / Linux / macOS**
+- No changes from v1.0.3.
 
 ---
 

@@ -40,9 +40,14 @@ jobs:
           if [[ "$GITHUB_REF" == refs/tags/android-v* ]]; then
             echo "SEVBY_VERSION_NAME=${GITHUB_REF_NAME#android-v}" >> "$GITHUB_ENV"
           else
-            echo "SEVBY_VERSION_NAME=0.1.0-dev.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+            # Test build of the NEXT version: e.g. VERSION 1.0.4 in sevby_app.py -> 1.0.5-dev.<run> (0.10.2-beta -> 0.10.3-dev.<run>).
+            # It installs over the 1.0.4 release, and the 1.0.5 release later installs over it.
+            # (The internal versionCode is worked out from this name in app/build.gradle.kts.)
+            V=$(grep -m1 '^VERSION = ' ../sevby_app.py | sed 's/.*"\(.*\)".*/\1/')
+            core=${V%%-*}; IFS=. read -r a b c <<< "$core"
+            next="$a.$b.$((c + 1))"
+            echo "SEVBY_VERSION_NAME=${next}-dev.$((GITHUB_RUN_NUMBER % 200))" >> "$GITHUB_ENV"
           fi
-          echo "SEVBY_VERSION_CODE=${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
 
       - name: Signing key (from repo secrets, if set)
         run: |
