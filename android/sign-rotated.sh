@@ -10,6 +10,7 @@
 # Needs: OLD_KEYSTORE / OLD_KEY_ALIAS / OLD_KEYSTORE_PASSWORD / OLD_KEY_PASSWORD
 #        NEW_KEYSTORE / NEW_KEY_ALIAS / NEW_KEYSTORE_PASSWORD (the new key uses the same password for its key)
 # If no new key is set, the APKs are left exactly as Gradle signed them.
+# The new key lives only in the protected "release" environment (main + release tags), since 19 Nov 2026.
 set -euo pipefail
 dir=${1:?usage: sign-rotated.sh <apk folder>}
 if [ -z "${NEW_KEYSTORE:-}" ] || [ ! -s "${NEW_KEYSTORE}" ] || [ -z "${OLD_KEYSTORE:-}" ] || [ ! -s "${OLD_KEYSTORE}" ]; then
