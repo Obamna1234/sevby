@@ -119,6 +119,7 @@ jobs:
   release:
     needs: build
     if: github.ref == 'refs/heads/main'
+    environment: release   # signing keys live in the protected environment (main only)
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -166,10 +167,12 @@ jobs:
           if [ -n "$SEVBY_KEYSTORE_BASE64" ]; then
             echo "$SEVBY_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/sevby.jks"
             echo "SEVBY_KEYSTORE=$RUNNER_TEMP/sevby.jks" >> "$GITHUB_ENV"
-            if [ -n "$NEWKEY_BASE64" ]; then
-              echo "$NEWKEY_BASE64" | base64 -d > "$RUNNER_TEMP/sevby-new.jks"
-              echo "NEW_KEYSTORE=$RUNNER_TEMP/sevby-new.jks" >> "$GITHUB_ENV"
+            if [ -z "$NEWKEY_BASE64" ]; then
+              echo "::error::The new signing key (SEVBY_NEWKEY_* in the 'release' environment) is missing."
+              exit 1
             fi
+            echo "$NEWKEY_BASE64" | base64 -d > "$RUNNER_TEMP/sevby-new.jks"
+            echo "NEW_KEYSTORE=$RUNNER_TEMP/sevby-new.jks" >> "$GITHUB_ENV"
           else
             echo "::warning::No SEVBY_KEYSTORE_BASE64 secret - the Android APK is left out of this release."
           fi
